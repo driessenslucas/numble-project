@@ -1,7 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Azure.AI.OpenAI;  // Make sure to have the correct Azure SDK namespace
-using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Azure;
 using Microsoft.AspNetCore.Builder;
@@ -10,7 +8,6 @@ using Microsoft.Extensions.Hosting;
 using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.AspNetCore.Http;
-using Azure;
 using OpenAI.Chat;
 
 namespace ChatApp.Services
@@ -27,7 +24,8 @@ namespace ChatApp.Services
             _endpoint = configuration["Azure:OpenAIEndpoint"];
             
             // Await the asynchronous method here
-            _apiKey = GetAzureKeyFromVault(configuration["Azure:KeyVaultUri"], configuration["Azure:OpenAIKeySecretName"]).Result;
+            _apiKey = GetAzureKeyFromVault(configuration["Azure:KeyVaultUri"], 
+                      configuration["Azure:OpenAIKeySecretName"]).Result;
             
             if (string.IsNullOrEmpty(_endpoint))
             {

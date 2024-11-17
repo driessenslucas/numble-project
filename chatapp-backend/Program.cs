@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Azure.AI.OpenAI;
-using ChatApp.Controllers;  // Adjusted to your project namespace
+using ChatApp.Controllers;
 using ChatApp.Models;
 using ChatApp.Services;
 

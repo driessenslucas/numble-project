@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
-using ChatApp.Models;  // Ensure the namespace for ChatRequest is correctly imported
-using ChatApp.Services;  // Add this to include the IOpenAIService interface
+using ChatApp.Models;
+using ChatApp.Services;
 
 
 namespace ChatApp.Controllers
