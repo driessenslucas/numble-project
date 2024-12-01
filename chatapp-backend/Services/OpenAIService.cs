@@ -29,16 +29,17 @@ namespace ChatApp.Services
             
             if (string.IsNullOrEmpty(_endpoint))
             {
-                Console.WriteLine(_endpoint);
-                Console.WriteLine(_apiKey);
-                Console.WriteLine("Error: OpenAI endpoint is not configured.");
+                _logger.LogError("OpenAI endpoint is not configured.");
+                throw new Exception("OpenAI endpoint is not configured.");
             }
-            else
+
+            if (string.IsNullOrEmpty(_apiKey))
             {
-                Console.WriteLine(_endpoint);
-                Console.WriteLine(_apiKey);
-                Console.WriteLine("OpenAI endpoint configured successfully.");
+                _logger.LogError("OpenAI API key is not configured.");
+                throw new Exception("OpenAI API key is not configured.");
             }
+
+            _logger.LogInformation($"OpenAI endpoint: {_endpoint}");
         }
 
         // Asynchronous method to get chat response from OpenAI
@@ -46,8 +47,6 @@ namespace ChatApp.Services
         {
             try
             {
-              
-
                 AzureOpenAIClient client = new(new Uri(_endpoint), new AzureKeyCredential(_apiKey));
 
                 Console.WriteLine("Client: ", client);
@@ -73,7 +72,8 @@ namespace ChatApp.Services
             }
             catch (Exception ex)
             {
-                 Console.WriteLine($"Failed to get chat response: {ex.Message}");
+                // Console.WriteLine($"Failed to get chat response: {ex.Message}");
+                _logger.LogError($"Failed to get chat response: {ex.Message}");
                 return $"Failed to get message: {ex.Message}";
             }
         }
@@ -88,14 +88,18 @@ namespace ChatApp.Services
 
                 // Use asynchronous method to fetch the secret
                 var secret = await client.GetSecretAsync(secretName);
-                 Console.WriteLine($"Successfully retrieved secret '{secretName}' from KeyVault.");
+
+                if (secret == null)
+                {
+                    throw new Exception($"Secret '{secretName}' not found in KeyVault.");
+                } 
                 return secret.Value.Value;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to retrieve secret from KeyVault: {ex.Message}");
                 throw new Exception($"Failed to retrieve secret: {ex.Message}", ex);
             }
+            
         }
     }
 }
