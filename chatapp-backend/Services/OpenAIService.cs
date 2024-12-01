@@ -16,31 +16,38 @@ namespace ChatApp.Services
     {
         private readonly string _endpoint;
         private readonly string _apiKey;
-        private readonly ILogger<OpenAIService> _logger;
 
         // Constructor accepts ILogger to enable logging
-        public OpenAIService(IConfiguration configuration, ILogger<OpenAIService> logger)
+        public OpenAIService(IConfiguration configuration)
         {
-            _endpoint = configuration["Azure:OpenAIEndpoint"];
-            
-            // Await the asynchronous method here
-            _apiKey = GetAzureKeyFromVault(configuration["Azure:KeyVaultUri"], 
-                      configuration["Azure:OpenAIKeySecretName"]).Result;
-            
-            if (string.IsNullOrEmpty(_endpoint))
+            try
             {
-                _logger.LogError("OpenAI endpoint is not configured.");
-                throw new Exception("OpenAI endpoint is not configured.");
-            }
+                _endpoint = configuration["Azure:OpenAIEndpoint"] ?? throw new ArgumentNullException("Azure:OpenAIEndpoint is not configured.");
+                _apiKey = GetAzureKeyFromVault(configuration["Azure:KeyVaultUri"] ?? throw new ArgumentNullException("KeyVaultUri is null"), 
+                                            configuration["Azure:OpenAIKeySecretName"] ?? throw new ArgumentNullException("OpenAIKeySecretName is null")).Result;
 
-            if (string.IsNullOrEmpty(_apiKey))
+                if (string.IsNullOrEmpty(_endpoint))
+                {
+                    Console.WriteLine("OpenAI endpoint is not configured.");
+                    throw new Exception("OpenAI endpoint is not configured.");
+                }
+
+                if (string.IsNullOrEmpty(_apiKey))
+                {
+                    Console.WriteLine("OpenAI API key is not configured.");
+                    throw new Exception("OpenAI API key is not configured.");
+                }
+
+                Console.WriteLine($"OpenAI endpoint: {_endpoint}");
+            }
+            catch (Exception ex)
             {
-                _logger.LogError("OpenAI API key is not configured.");
-                throw new Exception("OpenAI API key is not configured.");
+                Console.WriteLine($"Failed to initialize OpenAI service: {ex.Message}");
+                throw new Exception("Failed to initialize OpenAI service.");
             }
-
-            _logger.LogInformation($"OpenAI endpoint: {_endpoint}");
         }
+
+
 
         // Asynchronous method to get chat response from OpenAI
         public async Task<string> GetChatResponseAsync(string userMessage)
@@ -72,8 +79,8 @@ namespace ChatApp.Services
             }
             catch (Exception ex)
             {
-                // Console.WriteLine($"Failed to get chat response: {ex.Message}");
-                _logger.LogError($"Failed to get chat response: {ex.Message}");
+                
+                Console.WriteLine($"Failed to get chat response: {ex.Message}");
                 return $"Failed to get message: {ex.Message}";
             }
         }
@@ -89,17 +96,17 @@ namespace ChatApp.Services
                 // Use asynchronous method to fetch the secret
                 var secret = await client.GetSecretAsync(secretName);
 
-                if (secret == null)
+                if (secret == null || string.IsNullOrEmpty(secret.Value?.Value))
                 {
                     throw new Exception($"Secret '{secretName}' not found in KeyVault.");
-                } 
+                }
+                
                 return secret.Value.Value;
             }
             catch (Exception ex)
             {
                 throw new Exception($"Failed to retrieve secret: {ex.Message}", ex);
             }
-            
         }
     }
 }

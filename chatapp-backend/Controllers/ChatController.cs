@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Threading.Tasks;
 using ChatApp.Models;
 using ChatApp.Services;
-
 
 namespace ChatApp.Controllers
 {
@@ -12,17 +12,17 @@ namespace ChatApp.Controllers
     {
         private readonly IOpenAIService _openAIService;
 
-        // Inject the OpenAI service into the controller
         public ChatController(IOpenAIService openAIService)
         {
-            _openAIService = openAIService;
+            _openAIService = openAIService ?? throw new ArgumentNullException(nameof(openAIService));
         }
 
-        // POST endpoint to send a chat request to OpenAI
         [HttpPost("chat")]
         public async Task<IActionResult> GetChatResponse([FromBody] ChatRequest request)
         {
-            // Ensure the request is not null or empty
+            // Log the incoming request
+            Console.WriteLine("Received chat request");
+
             if (request == null || string.IsNullOrEmpty(request.UserMessage))
             {
                 return BadRequest("User message is required.");
@@ -30,15 +30,23 @@ namespace ChatApp.Controllers
 
             try
             {
-                // Pass the user's message to the OpenAI service and get the response
+                // Log before calling the service
+                Console.WriteLine($"Processing message: {request.UserMessage}");
+
                 var response = await _openAIService.GetChatResponseAsync(request.UserMessage);
 
-                // Return the response from OpenAI
+                // Log successful response
+                Console.WriteLine("Successfully processed chat request");
+
                 return Ok(new { response });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                // Log the exception
+                Console.WriteLine($"Error occurred while processing chat request: {ex.Message}");
+
+                // Return generic 500 error without exposing the detailed exception
+                return StatusCode(500, "An internal server error occurred.");
             }
         }
     }

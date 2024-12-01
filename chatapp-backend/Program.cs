@@ -14,10 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
-// Add logging service
-builder.Services.AddLogging();
-
-builder.Services.AddSingleton<IOpenAIService, OpenAIService>();
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+builder.Services.AddScoped<IOpenAIService, OpenAIService>();
 
 // Register Swagger
 builder.Services.AddEndpointsApiExplorer();
