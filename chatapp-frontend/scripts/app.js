@@ -236,13 +236,24 @@ class ChatApp {
         this.elements.sessionList.innerHTML = sessions.map(session => 
             `<div class="session" data-session-id="${session.sessionId}">
                 ${session.sessionName || 'Unnamed Session'}
+                <span class="delete-session-btn" data-session-id="${session.sessionId}">
+                    🗑️
+                </span>
             </div>`
         ).join('');
 
         document.querySelectorAll('.session').forEach(el => {
             el.addEventListener('click', (e) => {
-                const sessionId = e.target.dataset.sessionId;
+                const sessionId = e.target.dataset.sessionId || e.target.closest('.session').dataset.sessionId;
                 this.loadSession(sessionId);
+            });
+        });
+
+        document.querySelectorAll('.delete-session-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent triggering the session click
+                const sessionId = e.target.dataset.sessionId || e.target.closest('.delete-session-btn').dataset.sessionId;
+                this.deleteSession(sessionId);
             });
         });
     }
@@ -304,6 +315,40 @@ class ChatApp {
         }
     }
 
+    async deleteSession(sessionId) {
+        // Create a confirmation dialog
+        const confirmDelete = confirm('Are you sure you want to delete this chat session? This action cannot be undone.');
+        
+        if (!confirmDelete) {
+            return; // Exit if user cancels
+        }
+
+        try {
+            const response = await fetch(`${this.API_URL}/api/chat/sessions/${this.userId}/${sessionId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                console.log('Session deleted successfully.');
+                // Remove session from cached sessions
+                this.cachedSessions = this.cachedSessions.filter(session => session.sessionId !== sessionId);
+                // Refresh the session list
+                this.renderSessions(this.cachedSessions);
+
+                // If the deleted session was the current session, clear the chat area
+                if (this.currentSessionId === sessionId) {
+                    this.newSession();
+                }
+            } else {
+                console.error('Failed to delete session.');
+                alert('Failed to delete the session. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error deleting session:', error);
+            alert('An error occurred while deleting the session. Please try again.');
+        }
+    }
+
     async sendMessage() {
         const messageText = this.elements.messageInput.value.trim();
         if (!messageText) return;
@@ -356,9 +401,23 @@ class ChatApp {
     }
 
     logout() {
-        localStorage.removeItem('userId');
-        sessionStorage.clear();
-        window.location.href = 'index.html';
+        const confirmLogout = confirm('Are you sure you want to log out? All unsaved chat sessions will be cleared.');
+        
+        if (!confirmLogout) {
+            return; // Exit if user cancels
+        }
+
+        try {
+            // Clear user-related data
+            localStorage.removeItem('userId');
+            sessionStorage.clear();  // Clear cached sessions and messages on logout
+            
+            // Redirect to login page
+            window.location.href = 'index.html';
+        } catch (error) {
+            console.error('Logout error:', error);
+            alert('An error occurred while logging out. Please try again.');
+        }
     }
 }
 

@@ -12,5 +12,7 @@ namespace ChatApp.Services
         Task SaveSessionAsync(ChatSession session);
         Task<ChatSession> GetSessionAsync(string userId, string sessionId);
         Task<List<ChatSession>> GetSessionsForUserAsync(string userId);
+
+        Task DeleteSessionAsync(string userId, string sessionId);
     }
 }

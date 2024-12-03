@@ -173,5 +173,23 @@ namespace ChatApp.Controllers
                 return StatusCode(500, "An error occurred while retrieving the session.");
             }
         }
+
+        [HttpDelete("sessions/{userId}/{sessionId}")]
+        public async Task<IActionResult> DeleteSession(string userId, string sessionId)
+        {
+            try
+            {
+                Console.WriteLine($"Attempting to delete session {sessionId} for user {userId}");
+                await _cosmosDbService.DeleteSessionAsync(userId, sessionId);
+                Console.WriteLine("Session deleted successfully.");
+                return Ok("Session deleted successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error deleting session: {ex.GetType().Name} - {ex.Message}");
+                Console.Error.WriteLine($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, "An error occurred while deleting the session.");
+            }
+        }
     }
 }

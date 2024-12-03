@@ -180,4 +180,25 @@ public class CosmosDbService : ICosmosDbService
             throw;
         }
     }
+
+    public async Task DeleteSessionAsync(string userId, string sessionId)
+    {
+        try
+        {
+            Console.WriteLine($"Deleting session {sessionId} for user {userId}");
+            var response = await _container.DeleteItemAsync<ChatSession>(sessionId, new PartitionKey(userId));
+            Console.WriteLine($"Session deleted. RequestCharge: {response.RequestCharge} RU/s");
+        }
+        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            Console.Error.WriteLine($"Session not found: {ex.Message}");
+            throw new InvalidOperationException("Session not found.");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error deleting session: {ex.GetType().Name} - {ex.Message}");
+            Console.Error.WriteLine($"Stack trace: {ex.StackTrace}");
+            throw;
+        }
+    }
 }
