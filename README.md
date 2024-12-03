@@ -49,18 +49,6 @@ A modern, AI-powered chat application built with .NET 9.0 backend and vanilla Ja
 - `GET /api/chat/sessions/{userId}/{sessionId}`: Get specific session
 - `DELETE /api/chat/sessions/{userId}/{sessionId}`: Delete a session
 
-## Getting Started
-
-### Prerequisites
-- .NET 9.0 SDK
-- Azure Cosmos DB account
-- OpenAI API access
-
-### Configuration
-1. Set up Azure Key Vault
-2. Configure Cosmos DB connection string
-3. Add OpenAI API credentials
-
 ---
 
 **Developed with ❤️ using .NET, Azure, and OpenAI**
