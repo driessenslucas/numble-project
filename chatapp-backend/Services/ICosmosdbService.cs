@@ -5,11 +5,12 @@ using System.Threading.Tasks;
 using System.Threading.Tasks;
 using ChatApp.Models;
 
-namespace chatapp.Services
+namespace ChatApp.Services 
 {
     public interface ICosmosDbService
     {
-        Task SaveChatAsync(ChatHistory chatHistory);
-        Task<ChatHistory[]> GetChatHistoryAsync(string userId);
+        Task SaveSessionAsync(ChatSession session);
+        Task<ChatSession> GetSessionAsync(string userId, string sessionId);
+        Task<List<ChatSession>> GetSessionsForUserAsync(string userId);
     }
 }

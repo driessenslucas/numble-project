@@ -1,17 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Newtonsoft.Json;
 
-namespace chatapp.Models
+namespace ChatApp.Models
 {
-
     public class ChatSession
     {
-        public string Id { get; set; }             // Session ID
-        public string UserId { get; set; }        // User ID
-        public string SessionName { get; set; }   // Optional session name
+        [JsonProperty("id")]
+        public required string sessionId { get; set; }             // Session ID
+        
+        [JsonProperty("userId")]
+        public required string UserId { get; set; }        // User ID
+        
+        public required string SessionName { get; set; }   // Optional session name
         public List<ChatMessage> Messages { get; set; } = new(); // List of chat messages
-        public string LastUpdated { get; set; }   // ISO 8601 timestamp
+        public required string LastUpdated { get; set; }   // ISO 8601 timestamp
     }
 }

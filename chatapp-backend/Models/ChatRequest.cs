@@ -7,6 +7,7 @@ namespace ChatApp.Models
 {
     public class ChatRequest
     {
-        public string UserMessage { get; set; } = string.Empty;
+        public required string UserId { get; set; }
+        public required string UserMessage { get; set; }
     }
 }
