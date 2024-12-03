@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<body>
+    <div class="main">
+        <p>Please login to continue.</p>
+        <p>Redirecting...</p>
+        <p>JavaScript must be enabled to continue.</p>
+    </div>
+
+    <script>
+        // redirect to https://LucasChatApp.b2clogin.com/LucasChatApp.onmicrosoft.com/oauth2/v2.0/authorize?p=B2C_1_chatflow&client_id=5d52d5ac-a767-4449-9270-deb5a0c3a961&nonce=defaultNonce&redirect_uri=http%3A%2F%2Flocalhost%3A5500&scope=openid&response_type=id_token&prompt=login
+        document.addEventListener('DOMContentLoaded', () => {
+            const main = document.querySelector('.main');
+            main.innerHTML = `<p>Loading...</p>`;
+
+            // redirect to Azure B2C login page
+            window.location.href = 'https://lucaschatapp.b2clogin.com/LucasChatApp.onmicrosoft.com/oauth2/v2.0/authorize?p=B2C_1_chatflow&client_id=5d52d5ac-a767-4449-9270-deb5a0c3a961&nonce=defaultNonce&redirect_uri=http%3A%2F%2Flocalhost%3A5500&scope=openid&response_type=id_token&prompt=login';
+        });
+    </script>
+</body>
+</html>
