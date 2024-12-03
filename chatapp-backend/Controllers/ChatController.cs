@@ -118,45 +118,29 @@ namespace ChatApp.Controllers
             }
         }
 
-        [HttpPost("save-session")]
-        public async Task<IActionResult> SaveSession([FromBody] ChatSession session)
-        {
-            if (session == null || string.IsNullOrEmpty(session.UserId))
-            {
-                return BadRequest("Session or UserId is required.");
-            }
-
-            try
-            {
-                await _cosmosDbService.SaveSessionAsync(session);
-                return Ok("Session saved successfully.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving session: {ex.Message}");
-                return StatusCode(500, "An error occurred while saving the session.");
-            }
-        }
-
-        [HttpGet("get-sessions")]
-        public async Task<IActionResult> GetSessions()
+        [HttpGet("sessions/{userId}/{sessionId}")]
+        public async Task<IActionResult> GetSession(string userId, string sessionId)
         {
             try
             {
-                var userId = User.Identity?.Name; // Assumes B2C provides a unique identifier
+                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(sessionId))
+                {
+                    return BadRequest("User ID and Session ID are required.");
+                }
 
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized();
+                var session = await _cosmosDbService.GetSessionAsync(userId, sessionId);
+                if (session == null)
+                {
+                    return NotFound("Session not found.");
+                }
 
-                var sessions = await _cosmosDbService.GetSessionsForUserAsync(userId);
-                return Ok(sessions);
+                return Ok(session);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error retrieving sessions: {ex.Message}");
-                return StatusCode(500, "An error occurred while retrieving sessions.");
+                Console.Error.WriteLine($"Error retrieving session: {ex.Message}");
+                return StatusCode(500, "An error occurred while retrieving the session.");
             }
         }
-
     }
 }
