@@ -44,33 +44,64 @@ namespace ChatApp.Controllers
                 var response = await _openAIService.GetChatResponseAsync(request.UserMessage);
                 Console.WriteLine($"OpenAI Response: {response}");
 
-                // Save to Cosmos DB
-                var chatSession = new ChatSession
-                {
-                    sessionId = Guid.NewGuid().ToString(),
-                    UserId = request.UserId,
-                    SessionName = "Default Session",
-                    Messages = new List<ChatMessage>
-                    {
-                        new ChatMessage
-                        {
-                            MessageId = Guid.NewGuid().ToString(),
-                            Text = request.UserMessage,
-                            IsUserMessage = true,
-                            Timestamp = DateTime.UtcNow.ToString("o")
-                        },
-                        new ChatMessage
-                        {
-                            MessageId = Guid.NewGuid().ToString(),
-                            Text = response,
-                            IsUserMessage = false,
-                            Timestamp = DateTime.UtcNow.ToString("o")
-                        }
-                    },
-                    LastUpdated = DateTime.UtcNow.ToString("o")
-                };
+                ChatSession chatSession;
 
-                Console.WriteLine("Created ChatSession object:");
+                if (!string.IsNullOrEmpty(request.SessionId))
+                {
+                    // Retrieve existing session
+                    chatSession = await _cosmosDbService.GetSessionAsync(request.UserId, request.SessionId);
+                    if (chatSession == null)
+                    {
+                        return NotFound("Session not found.");
+                    }
+
+                    // Append new message to existing session
+                    chatSession.Messages.Add(new ChatMessage
+                    {
+                        MessageId = Guid.NewGuid().ToString(),
+                        Text = request.UserMessage,
+                        IsUserMessage = true,
+                        Timestamp = DateTime.UtcNow.ToString("o")
+                    });
+
+                    chatSession.Messages.Add(new ChatMessage
+                    {
+                        MessageId = Guid.NewGuid().ToString(),
+                        Text = response,
+                        IsUserMessage = false,
+                        Timestamp = DateTime.UtcNow.ToString("o")
+                    });
+                }
+                else
+                {
+                    // Create new session
+                    chatSession = new ChatSession
+                    {
+                        sessionId = Guid.NewGuid().ToString(),
+                        UserId = request.UserId,
+                        SessionName = "Default Session",
+                        Messages = new List<ChatMessage>
+                        {
+                            new ChatMessage
+                            {
+                                MessageId = Guid.NewGuid().ToString(),
+                                Text = request.UserMessage,
+                                IsUserMessage = true,
+                                Timestamp = DateTime.UtcNow.ToString("o")
+                            },
+                            new ChatMessage
+                            {
+                                MessageId = Guid.NewGuid().ToString(),
+                                Text = response,
+                                IsUserMessage = false,
+                                Timestamp = DateTime.UtcNow.ToString("o")
+                            }
+                        },
+                        LastUpdated = DateTime.UtcNow.ToString("o")
+                    };
+                }
+
+                Console.WriteLine("Created/Updated ChatSession object:");
                 Console.WriteLine($"  SessionId: {chatSession.sessionId}");
                 Console.WriteLine($"  UserId: {chatSession.UserId}");
                 Console.WriteLine($"  Messages Count: {chatSession.Messages.Count}");
@@ -88,7 +119,7 @@ namespace ChatApp.Controllers
                     throw;
                 }
 
-                return Ok(new { response });
+                return Ok(new { response, sessionId = chatSession.sessionId });
             }
             catch (Exception ex)
             {

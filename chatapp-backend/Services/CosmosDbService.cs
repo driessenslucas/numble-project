@@ -96,6 +96,17 @@ public class CosmosDbService : ICosmosDbService
                 throw new ArgumentException("UserId cannot be null or empty");
             }
 
+            // Set SessionName based on the first two words of the first user message
+            if (session.Messages != null && session.Messages.Count > 0)
+            {
+                var firstUserMessage = session.Messages.FirstOrDefault(m => m.IsUserMessage)?.Text;
+                if (!string.IsNullOrEmpty(firstUserMessage))
+                {
+                    var words = firstUserMessage.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    session.SessionName = string.Join(" ", words.Take(2)) + (words.Length > 2 ? "..." : "");
+                }
+            }
+
             session.LastUpdated = DateTime.UtcNow.ToString("o");
             
             var response = await _container.UpsertItemAsync(

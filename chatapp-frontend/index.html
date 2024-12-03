@@ -12,13 +12,45 @@
     </div>
 
     <script>
+        function parseJwt (token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+
+            return JSON.parse(jsonPayload);
+        }
         // redirect to https://LucasChatApp.b2clogin.com/LucasChatApp.onmicrosoft.com/oauth2/v2.0/authorize?p=B2C_1_chatflow&client_id=5d52d5ac-a767-4449-9270-deb5a0c3a961&nonce=defaultNonce&redirect_uri=http%3A%2F%2Flocalhost%3A5500&scope=openid&response_type=id_token&prompt=login
         document.addEventListener('DOMContentLoaded', () => {
             const main = document.querySelector('.main');
             main.innerHTML = `<p>Loading...</p>`;
 
             // redirect to Azure B2C login page
-            window.location.href = 'https://lucaschatapp.b2clogin.com/LucasChatApp.onmicrosoft.com/oauth2/v2.0/authorize?p=B2C_1_chatflow&client_id=5d52d5ac-a767-4449-9270-deb5a0c3a961&nonce=defaultNonce&redirect_uri=http%3A%2F%2Flocalhost%3A5500&scope=openid&response_type=id_token&prompt=login';
+            // window.location.href = 'https://LucasChatApp.b2clogin.com/LucasChatApp.onmicrosoft.com/oauth2/v2.0/authorize?p=B2C_1_chatflow&client_id=5d52d5ac-a767-4449-9270-deb5a0c3a961&nonce=defaultNonce&redirect_uri=http%3A%2F%2Flocalhost%3A5500%2Fauth.html&scope=openid&response_type=id_token&prompt=login';
+
+            if (window.location.href.includes('id_token')) {
+                // parse #id_token=
+                const urlParams = window.location.href.split('#')[1];
+                console.log(urlParams);
+                const idToken = urlParams.split('=')[1];
+                console.log(idToken);
+                if (idToken) {
+                    // parse jwt
+                    const decodedToken = parseJwt(idToken);
+                    // fetch "sub" from the payload
+                    const sub = decodedToken.sub;
+                    // store token in local storage
+                    localStorage.setItem('userId', sub);
+                    // redirect to chat.html
+                    console.log('Redirecting to chat.html...');
+                    window.location.href = 'chat.html';
+                }
+            }
+            else{
+                // redirect to login page
+                window.location.href = 'https://lucaschatapp.b2clogin.com/LucasChatApp.onmicrosoft.com/oauth2/v2.0/authorize?p=B2C_1_chatflow&client_id=5d52d5ac-a767-4449-9270-deb5a0c3a961&nonce=defaultNonce&redirect_uri=http%3A%2F%2Flocalhost%3A5500&scope=openid&response_type=id_token&prompt=login'; 
+            }
         });
     </script>
 </body>

@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Chat App</title>
-    <style>
-        body { font-family: Arial, sans-serif; display: flex; height: 100vh; margin: 0; }
-        #sidebar { width: 25%; background: #f0f0f0; padding: 10px; overflow-y: auto; }
-        #chat-area { width: 75%; display: flex; flex-direction: column; }
-        #messages { flex-grow: 1; overflow-y: auto; padding: 10px; }
-        #input-area { display: flex; padding: 10px; background: #e0e0e0; }
-        .user-msg { text-align: right; background: #e6f2ff; margin: 5px; padding: 5px; }
-        .ai-msg { text-align: left; background: #e6ffe6; margin: 5px; padding: 5px; }
-    </style>
+    <link rel="stylesheet" href="./css/main.css">
+    <!-- jquery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="./scripts/app.js"></script>
 </head>
 <body>
     <div id="sidebar">
+        <!-- add new message button next to H1 -->
+         <h1>Chat App <p id="new-message-btn" >+</p></h1>
+        <!-- <h1>Chat App <div></div></h1> -->
+        <button id="logout-btn" >Logout</button>
         <h2>Chat Sessions</h2>
         <div id="session-list"></div>
     </div>
