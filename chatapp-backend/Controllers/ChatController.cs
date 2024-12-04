@@ -26,13 +26,15 @@ namespace ChatApp.Controllers
 
         private IActionResult ValidateUserAuthentication(string requestUserId)
         {
-            var authenticatedUserId = HttpContext.Items["UserId"]?.ToString();
-            if (string.IsNullOrEmpty(authenticatedUserId) || authenticatedUserId != requestUserId)
+            Console.WriteLine($"HttpContext items: {string.Join(", ", HttpContext.Items.Keys)}");
+            var authenticatedUsers = HttpContext.Items["userIds"] as List<string>;
+            if (authenticatedUsers != null && authenticatedUsers.Contains(requestUserId))
             {
-                return Unauthorized("User ID mismatch or not authenticated");
+                return Ok();
             }
             return null;
         }
+
 
         [HttpPost]
         public async Task<IActionResult> Chat([FromBody] ChatRequest request)

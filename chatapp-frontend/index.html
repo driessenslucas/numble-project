@@ -46,9 +46,14 @@
                     const decodedToken = parseJwt(idToken);
                     // fetch "sub" from the payload
                     const sub = decodedToken.sub;
-                    // store token and user id in local storage
+                    const email = decodedToken.emails[0];
+                    const name = decodedToken.given_name;
+                    // clear local storage
+                    localStorage.clear();
                     localStorage.setItem('userId', sub);
                     localStorage.setItem('idToken', idToken);
+                    localStorage.setItem('name', name);
+                    localStorage.setItem('email', email);
                     // redirect to chat.html
                     console.log('Redirecting to chat.html...');
                     window.location.href = 'chat.html';

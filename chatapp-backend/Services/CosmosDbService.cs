@@ -137,7 +137,7 @@ public class CosmosDbService : ICosmosDbService
         try
         {
             var response = await _container.ReadItemAsync<ChatSession>(
-                id: sessionId,  // This will be mapped to the 'id' field in Cosmos DB
+                id: sessionId, 
                 partitionKey: new PartitionKey(userId)
             );
             return response.Resource;

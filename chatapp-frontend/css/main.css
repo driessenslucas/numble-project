@@ -2,11 +2,15 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    display: flex;
     height: 100vh;
     background-color: #f0f2f5;
 }
 
+.main {
+
+    display: flex;
+    height: 100%;
+}
 #sidebar {
     width: 250px;
     background-color: #ffffff;
@@ -50,10 +54,14 @@ body {
     color: white;
     border: none;
     padding: 10px;
-    margin-bottom: 20px;
+    /* margin-bottom: 20px; */
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .session:nth-child(1){
@@ -198,4 +206,241 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: #555; 
+}
+
+
+/* Profile Box Styling */
+.profile-box {
+    background-color: #ffffff;
+    border-top: 1px solid #e0e0e0;
+    margin-top: auto;
+    position: relative;
+}
+
+.profile-preview {
+    padding-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    background-color: #ffffff;
+}
+
+.profile-preview:hover {
+    background-color: #f9fafb;
+}
+
+.profile-avatar {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.avatar-circle {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.online-status {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    background-color: #10b981;
+    border: 2px solid white;
+    border-radius: 50%;
+}
+
+.profile-preview h3 {
+    margin: 0;
+    color: #1a1a1a;
+    font-size: 1rem;
+    font-weight: 500;
+    flex-grow: 1;
+}
+
+.expand-profile {
+    background: none;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.expand-profile:hover {
+    color: #374151;
+}
+
+.expand-profile svg {
+    transform: rotate(180deg);
+    transition: transform 0.2s ease;
+}
+
+.profile-box.expanded .expand-profile svg {
+    transform: rotate(0deg);
+}
+
+.profile-details {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    background-color: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.profile-box.expanded .profile-details {
+    max-height: 200px;
+}
+
+.profile-info {
+    padding: 15px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.profile-info p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.profile-actions {
+    padding: 15px;
+}
+
+/* Loading States */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Adjust sidebar for profile box */
+#sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+#session-list {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+#suggestion-box {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #f0f2f5;
+    margin: 0 20px 10px 20px;
+    opacity: 0.8;
+}
+
+.suggestion {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 30%;
+    text-align: center;
+}
+
+.suggestion:hover {
+    background-color: #e6f2ff;
+    opacity: 1;
+}
+
+#profile-name{
+    font-size: 14px;
+}
+
+#logout-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+
+
+/* Target only SweetAlert2 elements */
+.swal2-container {
+    z-index: 10000 !important;
+    /* Ensure it remains above other UI components */
+}
+
+.swal2-popup {
+    font-size: 0.9rem !important;
+    /* Override default SweetAlert2 font size */
+    max-width: 90%;
+    /* Adjust popup size if needed */
+    box-sizing: border-box;
+    /* Prevent layout shifts */
+}
+
+.swal2-toast {
+    border: 1px solid #e0e0e0 !important;
+    /* Match your layout style */
+}
+
+.swal2-title {
+    font-family: Arial, sans-serif !important;
+    /* Match your layout font */
+}
+
+
+/* Prevent body shift when SweetAlert2 is open */
+body.swal2-shown {
+    overflow: hidden;
+    /* Prevent double-scrollbars */
+    height: 100vh !important;
+}
+
+
+#app-body{
+    overflow: hidden !important;
+    height: 100vh !important;
 }

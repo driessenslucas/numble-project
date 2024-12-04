@@ -2,7 +2,7 @@ class ChatApp {
     constructor() {
         this.userId = null;
         this.currentSessionId = null;
-        this.cachedSessions = null;
+        this.cachedSessions = localStorage.getItem('cachedSessions') ? JSON.parse(localStorage.getItem('cachedSessions')) : null;
         this.cachedMessages = {};
         this.token = null;
         this.elements = {
@@ -12,11 +12,12 @@ class ChatApp {
             sessionList: document.getElementById('session-list')
         };
         this.API_URL = 'https://localhost:5001';
-        this.initEventListeners();
+        this.initializeEventListeners();
+        this.initializeProfile();
         this.authenticateUser();
+        this.fetchChatHistory(true);
     }
 
-    
     parseJwt(token) {
         try {
             const base64Url = token.split('.')[1];
@@ -53,7 +54,6 @@ class ChatApp {
             return;
         }
 
-        this.fetchChatHistory();
         this.newSession();
     }
 
@@ -72,13 +72,6 @@ class ChatApp {
         }
 
         try {
-            Swal.fire({
-                title: 'Loading chat history...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
 
             const response = await fetch(`${this.API_URL}/api/chat/history?userId=${this.userId}`, {
                 credentials: 'include',
@@ -88,6 +81,7 @@ class ChatApp {
             });
             
             const sessions = await response.json();
+            localStorage.setItem('cachedSessions', JSON.stringify(sessions));
             this.cachedSessions = sessions;
             this.renderSessions(sessions);
             Swal.close();
@@ -136,15 +130,8 @@ class ChatApp {
             return;
         }
 
+        const loading = this.showLoading();
         try {
-            Swal.fire({
-                title: 'Loading messages...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
             const response = await fetch(`${this.API_URL}/api/chat/sessions/${this.userId}/${sessionId}`, {
                 credentials: 'include',
                 headers: {
@@ -154,14 +141,11 @@ class ChatApp {
             const session = await response.json();
             this.cachedMessages[sessionId] = session.messages;
             this.renderMessages(session.messages);
-            Swal.close();
         } catch (error) {
             console.error('Error loading session:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: 'Failed to load chat session. Please try again later.',
-            });
+            this.showToast('Failed to load chat session', 'error');
+        } finally {
+            this.hideLoading(loading);
         }
     }
 
@@ -174,7 +158,7 @@ class ChatApp {
         });
     }
 
-    initEventListeners() {
+    initializeEventListeners() {
         this.elements.sendBtn.addEventListener('click', () => this.sendMessage());
         this.elements.messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.sendMessage();
@@ -184,14 +168,61 @@ class ChatApp {
         document.getElementById('logout-btn').addEventListener('click', () => this.logout());
     }
 
+    initializeProfile() {
+        const profileName = document.getElementById('profile-name');
+        const profileEmail = document.getElementById('profile-email');
+
+        // load name and email from local storage
+        const name = localStorage.getItem('name');
+        const email = localStorage.getItem('email');
+
+        // Set profile info
+        profileName.innerHTML = email;
+
+        // Set avatar initials
+        const initialsSpan = document.querySelector('.initials');
+        if (name) {
+            const initials = name.split(' ')
+                .map(word => word[0])
+                .join('')
+                .substring(0, 2);
+            initialsSpan.textContent = initials;
+        }
+
+        // Add expand/collapse functionality
+        const profileBox = document.querySelector('.profile-box');
+        const profilePreview = document.querySelector('.profile-preview');
+        const expandButton = document.querySelector('.expand-profile');
+
+        function toggleProfileDetails() {
+            profileBox.classList.toggle('expanded');
+        }
+
+        profilePreview.addEventListener('click', toggleProfileDetails);
+        expandButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleProfileDetails();
+        });
+    }
+
     async newSession() {
         try {
             sessionStorage.removeItem('currentSessionId');
             this.currentSessionId = null;
-            this.elements.messages.innerHTML = '<div class="ai-msg">Hello, how can I help you today?</div>';
-            this.elements.messageInput.value = '';
 
-            this.fetchChatHistory(false);
+            this.elements.messages.innerHTML = '';
+
+            // Create suggestion box
+            const suggestionBox = document.createElement('div');
+            suggestionBox.id = 'suggestion-box';
+            suggestionBox.innerHTML = `
+                <div class="suggestion suggestion-1" onclick="document.getElementById('message-input').value = 'I need help with my account'">I need help with my account</div>
+                <div class="suggestion suggestion-2" onclick="document.getElementById('message-input').value = 'I want to place an order'">I want to place an order</div>
+                <div class="suggestion suggestion-3" onclick="document.getElementById('message-input').value = 'I have a question about a product'">I have a question about a product</div>
+            `;
+            this.elements.messages.appendChild(suggestionBox);
+
+            this.elements.messageInput.value = '';
         } catch (error) {
             console.error('Failed to create new session', error);
         }
@@ -199,28 +230,26 @@ class ChatApp {
 
     async deleteSession(sessionId) {
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            title: 'Delete Session',
+            text: "Are you sure? This can't be undone.",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Delete',
+            backdrop: true, // Keep default backdrop
+            scrollbarPadding: false, // Disable automatic scrollbar padding
+            customClass: {
+                popup: 'swal2-popup'
+            }
         });
         
         if (!result.isConfirmed) {
             return;
         }
 
+        const loading = this.showLoading();
         try {
-            Swal.fire({
-                title: 'Deleting session...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
             const response = await fetch(`${this.API_URL}/api/chat/sessions/${this.userId}/${sessionId}`, {
                 method: 'DELETE',
                 credentials: 'include',
@@ -232,23 +261,15 @@ class ChatApp {
             if (response.ok) {
                 delete this.cachedMessages[sessionId];
                 await this.fetchChatHistory(false);
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Deleted!',
-                    text: 'Your chat session has been deleted.',
-                    timer: 1500
-                });
+                this.showToast('Session deleted successfully', 'success');
             } else {
                 throw new Error('Failed to delete session');
             }
         } catch (error) {
             console.error('Error deleting session:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: 'Failed to delete chat session. Please try again later.',
-            });
+            this.showToast('Failed to delete session', 'error');
+        } finally {
+            this.hideLoading(loading);
         }
     }
 
@@ -257,6 +278,12 @@ class ChatApp {
         if (!messageText) return;
 
         try {
+            // if suggestion box is present, remove it
+            const suggestionBox = document.getElementById('suggestion-box');
+            if (suggestionBox) {
+                suggestionBox.remove();
+            }
+
             this.elements.messageInput.value = '';
             this.elements.messageInput.style.height = 'auto';
             
@@ -266,18 +293,7 @@ class ChatApp {
                 ...(this.currentSessionId && { "sessionId": this.currentSessionId })
             };
 
-            let loadingMessage = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 1000,
-                timerProgressBar: true
-            });
-
-            loadingMessage.fire({
-                icon: 'info',
-                title: 'Sending message...'
-            });
+            this.showToast('Sending message...', 'info');
 
             const response = await fetch(`${this.API_URL}/api/chat`, {
                 method: 'POST',
@@ -314,6 +330,7 @@ class ChatApp {
             this.fetchChatHistory(false);
         } catch (error) {
             console.error('Failed to send message', error);
+            this.showToast('Failed to send message', 'error');
         }
     }
 
@@ -334,6 +351,39 @@ class ChatApp {
             console.error('Logout error:', error);
             alert('An error occurred while logging out. Please try again.');
         }
+    }
+
+    showLoading() {
+        const overlay = document.createElement('div');
+        overlay.className = 'loading-overlay';
+        overlay.innerHTML = '<div class="loading-spinner"></div>';
+        document.body.appendChild(overlay);
+        return overlay;
+    }
+
+    hideLoading(overlay) {
+        if (overlay && overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+        }
+    }
+
+    showToast(message, type = 'info') {
+        const toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+
+        toast.fire({
+            icon: type,
+            title: message
+        });
     }
 }
 
