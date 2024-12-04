@@ -1,9 +1,10 @@
 # Numble Chat Application
 
 ## Overview
-A modern, AI-powered chat application built with .NET 9.0 backend and vanilla JavaScript frontend, leveraging Azure Cosmos DB for data persistence and OpenAI for intelligent responses.
+A take on the classic chat application (think of chatgpt), build with .NET 9.0, Azure Cosmos DB, and OpenAI API (via Azure).
 
-## Architecture Flowcharts
+
+## General Architecture Flowcharts
 
 ### Frontend Flow
 ![Frontend Flowchart](./chatapp-frontend/frontend-flowchart.png)
@@ -15,7 +16,7 @@ A modern, AI-powered chat application built with .NET 9.0 backend and vanilla Ja
 - Real-time AI-powered chat sessions
 - Persistent chat history
 - Session management
-- Lightweight and responsive design
+- Secure authentication
 
 ## Technologies Used
 - **Backend**: 
@@ -27,7 +28,7 @@ A modern, AI-powered chat application built with .NET 9.0 backend and vanilla Ja
   - HTML5
   - CSS3
 - **Authentication**: 
-  - Custom User ID mechanism
+  - Azure AD B2C (using jwt tokens)
 
 ## Core Components
 
@@ -35,6 +36,7 @@ A modern, AI-powered chat application built with .NET 9.0 backend and vanilla Ja
 - **ChatController**: Manages chat-related HTTP endpoints
 - **CosmosDbService**: Handles database operations
 - **OpenAIService**: Generates AI chat responses
+- **AuthenticationMiddleware**: Handles user authentication
 
 ### Frontend
 - **ChatApp Class**: Manages user interactions

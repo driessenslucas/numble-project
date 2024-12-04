@@ -15,7 +15,7 @@ class ChatApp {
         this.initializeEventListeners();
         this.initializeProfile();
         this.authenticateUser();
-        this.fetchChatHistory(true);
+        this.fetchChatHistory();
         this.historyToggle = document.getElementById('history-toggle');
     }
 
@@ -66,6 +66,19 @@ class ChatApp {
     }
 
     async fetchChatHistory(useCache = true) {
+        //check if cache is valid
+        try{
+            for (const session of this.cachedSessions) {
+                if (!this.cachedMessages[session.sessionId]) {
+                    useCache = false;
+                    break;
+                }
+            }
+        } catch (error) {
+            console.error('Error checking cache:', error);
+            useCache = false;
+        }
+
         if (useCache && this.cachedSessions) {
             console.log('Using cached sessions');
             this.renderSessions(this.cachedSessions);
