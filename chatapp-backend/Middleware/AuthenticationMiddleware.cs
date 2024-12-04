@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -12,13 +13,16 @@ namespace ChatApp.Middleware
     public class AuthenticationMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly string _tenantName = "LucasChatApp"; // Azure B2C tenant name
-        private readonly string _policyName = "B2C_1_chatflow"; // B2C user flow/policy name
-        private readonly string _clientId = "5d52d5ac-a767-4449-9270-deb5a0c3a961"; // Application ID
+        private readonly string _tenantName;
+        private readonly string _policyName;
+        private readonly string _clientId;
 
-        public AuthenticationMiddleware(RequestDelegate next)
+        public AuthenticationMiddleware(RequestDelegate next, IConfiguration configuration)
         {
             _next = next;
+            _tenantName = configuration["AzureB2C:TenantName"];
+            _policyName = configuration["AzureB2C:PolicyName"];
+            _clientId = configuration["AzureB2C:ClientId"];
         }
 
         public async Task InvokeAsync(HttpContext context)

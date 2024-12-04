@@ -47,11 +47,12 @@ builder.Services.AddCors(options =>
 });
 
 // Configure Authentication
+var configuration = builder.Configuration;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = "https://LucasChatApp.b2clogin.com/LucasChatApp.onmicrosoft.com/v2.0/";
-        options.Audience = "5d52d5ac-a767-4449-9270-deb5a0c3a961"; 
+        options.Authority = configuration["AzureB2C:Authority"];
+        options.Audience = configuration["AzureB2C:ClientId"];
         options.RequireHttpsMetadata = true; 
     });
 
