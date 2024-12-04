@@ -32,6 +32,9 @@
                     </button>
                 </div>
                 <div class="profile-details">
+                    <div class="profile-info">
+                        <p id="profile-email"></p>
+                    </div>
                     <div class="profile-actions">
                         <button id="logout-btn">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -42,9 +45,6 @@
                             Logout
                         </button>
                     </div>
-                    <div class="profile-info">
-                        <p id="profile-email"></p>
-                    </div>
                     
                 </div>
             </div>
@@ -52,6 +52,10 @@
         <div id="chat-area">
             <div id="messages"></div>
             <div id="input-area">
+                <div class="toggle-history">
+                        <label for="history-toggle">Include Chat History:</label>
+                        <input type="checkbox" id="history-toggle">
+                </div>
                 <input type="text" id="message-input" placeholder="Type a message">
                 <button id="send-btn">Send</button>
             </div>

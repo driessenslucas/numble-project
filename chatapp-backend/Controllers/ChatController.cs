@@ -52,7 +52,19 @@ namespace ChatApp.Controllers
                 Console.WriteLine($"Processing chat request for user: {request.UserId}");
                 Console.WriteLine($"User message: {request.UserMessage}");
 
-                var response = await _openAIService.GetChatResponseAsync(request.UserMessage);
+                var response = "";
+                // check if request contains a session ID
+                if (string.IsNullOrEmpty(request.SessionId))
+                {
+                    Console.WriteLine("No session ID provided.");
+                    response = await _openAIService.GetChatResponseAsync(request.UserMessage);
+                }
+                else{
+                    response = request.IncludeHistory
+                        ? await _openAIService.GetChatWithHistoryResponseAsync(request.UserMessage, await _cosmosDbService.GetSessionAsync(request.UserId, request.SessionId))
+                        : await _openAIService.GetChatResponseAsync(request.UserMessage);
+                }
+                    
                 Console.WriteLine($"OpenAI Response: {response}");
 
                 ChatSession chatSession;
@@ -72,7 +84,8 @@ namespace ChatApp.Controllers
                         MessageId = Guid.NewGuid().ToString(),
                         Text = request.UserMessage,
                         IsUserMessage = true,
-                        Timestamp = DateTime.UtcNow.ToString("o")
+                        Timestamp = DateTime.UtcNow.ToString("o"),
+                        IncludeHistory = request.IncludeHistory
                     });
 
                     chatSession.Messages.Add(new ChatMessage
@@ -80,7 +93,8 @@ namespace ChatApp.Controllers
                         MessageId = Guid.NewGuid().ToString(),
                         Text = response,
                         IsUserMessage = false,
-                        Timestamp = DateTime.UtcNow.ToString("o")
+                        Timestamp = DateTime.UtcNow.ToString("o"),
+                        IncludeHistory = request.IncludeHistory
                     });
                 }
                 else
@@ -98,14 +112,16 @@ namespace ChatApp.Controllers
                                 MessageId = Guid.NewGuid().ToString(),
                                 Text = request.UserMessage,
                                 IsUserMessage = true,
-                                Timestamp = DateTime.UtcNow.ToString("o")
+                                Timestamp = DateTime.UtcNow.ToString("o"),
+                                IncludeHistory = request.IncludeHistory
                             },
                             new ChatMessage
                             {
                                 MessageId = Guid.NewGuid().ToString(),
                                 Text = response,
                                 IsUserMessage = false,
-                                Timestamp = DateTime.UtcNow.ToString("o")
+                                Timestamp = DateTime.UtcNow.ToString("o"),
+                                IncludeHistory = request.IncludeHistory
                             }
                         },
                         LastUpdated = DateTime.UtcNow.ToString("o")

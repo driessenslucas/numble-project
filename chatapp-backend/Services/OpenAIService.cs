@@ -9,6 +9,9 @@ using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.AspNetCore.Http;
 using OpenAI.Chat;
+using ChatApp.Models;
+using System.Linq;
+using OpenAIChatMessage = OpenAI.Chat.ChatMessage; // since our model names overlap, we need to alias
 
 namespace ChatApp.Services
 {
@@ -83,6 +86,48 @@ namespace ChatApp.Services
                 return $"Failed to get message: {ex.Message}";
             }
         }
+
+        public async Task<string> GetChatWithHistoryResponseAsync(string userMessage, ChatSession session)
+        {
+            try
+            {
+                AzureOpenAIClient client = new(new Uri(_endpoint), new AzureKeyCredential(_apiKey));
+                var chatClient = client.GetChatClient("gpt-35-turbo");
+
+                var sessionMessages = session.Messages.Select(m =>
+                    m.IsUserMessage
+                        ? (OpenAIChatMessage)new OpenAI.Chat.UserChatMessage(m.Text)
+                        : new OpenAI.Chat.AssistantChatMessage(m.Text)).ToList();
+
+                var chatHistory = new List<OpenAIChatMessage>
+                {
+                    new OpenAI.Chat.SystemChatMessage("You are a helpful assistant.")
+                };
+                chatHistory.AddRange(sessionMessages);
+                chatHistory.Add(new OpenAI.Chat.UserChatMessage(userMessage));
+
+                var completionUpdates = chatClient.CompleteChatStreaming(chatHistory);
+
+                string chatMessageContent = "";
+                foreach (var update in completionUpdates)
+                {
+                    foreach (var contentPart in update.ContentUpdate)
+                    {
+                        chatMessageContent += contentPart.Text;
+                    }
+                }
+
+                return chatMessageContent;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to get chat response: {ex.Message}");
+                return $"Failed to get message: {ex.Message}";
+            }
+        }
+
+
+
 
         // Asynchronous method to get API key from Azure KeyVault
         private async Task<string> GetAzureKeyFromVault(string keyVaultUri, string secretName)

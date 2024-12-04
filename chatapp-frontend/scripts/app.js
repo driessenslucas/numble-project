@@ -16,6 +16,7 @@ class ChatApp {
         this.initializeProfile();
         this.authenticateUser();
         this.fetchChatHistory(true);
+        this.historyToggle = document.getElementById('history-toggle');
     }
 
     parseJwt(token) {
@@ -273,6 +274,10 @@ class ChatApp {
         }
     }
 
+    getIncludeHistory() {
+        return this.historyToggle.checked;
+    }
+
     async sendMessage() {
         const messageText = this.elements.messageInput.value.trim();
         if (!messageText) return;
@@ -290,6 +295,7 @@ class ChatApp {
             const body = {
                 "userId": this.userId,
                 "userMessage": messageText,
+                "includeHistory": this.getIncludeHistory(),
                 ...(this.currentSessionId && { "sessionId": this.currentSessionId })
             };
 
