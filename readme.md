@@ -6,10 +6,10 @@ A modern, AI-powered chat application built with .NET 9.0 backend and vanilla Ja
 ## Architecture Flowcharts
 
 ### Frontend Flow
-![Frontend Flowchart](./chatapp-frontend/flowchart-Frontend.png)
+![Frontend Flowchart](./chatapp-frontend/frontend-flowchart.png)
 
 ### Backend Flow
-![Backend Flowchart](./chatapp-backend/flowchart-Backend.png)
+![Backend Flowchart](./chatapp-backend/backend-flowchart.png)
 
 ## Key Features
 - Real-time AI-powered chat sessions

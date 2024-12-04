@@ -299,6 +299,8 @@ class ChatApp {
                 ...(this.currentSessionId && { "sessionId": this.currentSessionId })
             };
 
+            console.log(body);
+
             this.showToast('Sending message...', 'info');
 
             const response = await fetch(`${this.API_URL}/api/chat`, {

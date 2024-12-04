@@ -161,11 +161,17 @@ body {
     /* transform: translate(-50%); */
 }
 
+
 #input-area {
     display: flex;
     padding: 20px;
     background-color: #ffffff;
     border-top: 1px solid #e0e0e0;
+    flex-direction: column;
+}
+.input-controls {
+    display: flex;
+    align-items: center;
 }
 
 #message-input {
@@ -443,4 +449,60 @@ body.swal2-shown {
 #app-body{
     overflow: hidden !important;
     height: 100vh !important;
+}
+
+
+.toggle-history {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.history-toggle-label {
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    font-size: 14px;
+    color: #333;
+}
+
+.history-toggle-input {
+    opacity: 0;
+    position: absolute;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.toggle-slider {
+    position: relative;
+    margin-left: 10px;
+    width: 40px;
+    height: 20px;
+    background-color: #ccc;
+    border-radius: 20px;
+    transition: background-color 0.3s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.history-toggle-input:checked+.toggle-slider {
+    background-color: #4CAF50;
+}
+
+.history-toggle-input:checked+.toggle-slider::before {
+    transform: translateX(20px);
 }

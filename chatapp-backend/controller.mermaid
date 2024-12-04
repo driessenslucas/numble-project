@@ -1,0 +1,37 @@
+stateDiagram-v2
+    [*] --> ChatEndpoint: POST /api/chat
+    state ChatEndpoint {
+        state "Validate User Authentication" as Auth
+        state "Process Chat Request" as Process
+        state "Generate AI Response" as AIResponse
+        state "Create/Update ChatSession" as Session
+        state "Save to CosmosDB" as Save
+
+        [*] --> Auth
+        Auth --> Process : Authentication Successful
+        Process --> AIResponse : Prepare Response
+        AIResponse --> Session : Add Messages
+        Session --> Save : Persist Session
+        Save --> [*] : Return Response
+    }
+
+    ChatEndpoint --> GetHistory : GET /api/chat/history
+    state GetHistory {
+        [*] --> AuthHistory : Validate User
+        AuthHistory --> RetrieveSessions : Fetch User Sessions
+        RetrieveSessions --> [*]
+    }
+
+    ChatEndpoint --> GetSession : GET /api/chat/sessions/{userId}/{sessionId}
+    state GetSession {
+        [*] --> AuthSession : Validate User
+        AuthSession --> FetchSession : Retrieve Specific Session
+        FetchSession --> [*]
+    }
+
+    ChatEndpoint --> DeleteSession : DELETE /api/chat/sessions/{userId}/{sessionId}
+    state DeleteSession {
+        [*] --> AuthDelete : Validate User
+        AuthDelete --> Remove : Delete Session
+        Remove --> [*]
+    }

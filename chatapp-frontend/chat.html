@@ -53,11 +53,20 @@
             <div id="messages"></div>
             <div id="input-area">
                 <div class="toggle-history">
-                        <label for="history-toggle">Include Chat History:</label>
-                        <input type="checkbox" id="history-toggle">
+                    <label class="history-toggle-label" for="history-toggle">
+                        Include Chat History
+                        <input 
+                            type="checkbox" 
+                            id="history-toggle" 
+                            class="history-toggle-input"
+                        >
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
-                <input type="text" id="message-input" placeholder="Type a message">
-                <button id="send-btn">Send</button>
+                <div class="input-controls">
+                    <input type="text" id="message-input" placeholder="Type a message">
+                    <button id="send-btn">Send</button>
+                </div>
             </div>
         </div>
     </div>

@@ -1,0 +1,32 @@
+stateDiagram-v2
+    [*] --> Authentication: Initial Authentication
+    state Authentication {
+        direction LR
+        CheckToken : Validate JWT
+        LoginRedirect : Azure B2C OAuth
+        StoreCredentials : Save User Details
+    }
+
+    state ChatApplication {
+        state SessionManagement {
+            NewSession
+            LoadHistory
+            RenderSessions
+        }
+        
+        state MessageInteraction {
+            SendMessage
+            AIProcessing
+            UpdateSession
+            RenderResponse
+        }
+
+        state UserControls {
+            ToggleHistory
+            DeleteSession
+            Logout
+        }
+    }
+
+    Authentication --> ChatApplication
+    ChatApplication --> [*] : Logout/Session End
