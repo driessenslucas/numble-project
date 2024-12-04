@@ -72,6 +72,14 @@ class ChatApp {
         }
 
         try {
+            Swal.fire({
+                title: 'Loading chat history...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             const response = await fetch(`${this.API_URL}/api/chat/history?userId=${this.userId}`, {
                 credentials: 'include',
                 headers: {
@@ -82,8 +90,14 @@ class ChatApp {
             const sessions = await response.json();
             this.cachedSessions = sessions;
             this.renderSessions(sessions);
+            Swal.close();
         } catch (error) {
-            console.error('Failed to fetch chat history', error);
+            console.error('Error fetching chat history:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Failed to load chat history. Please try again later.',
+            });
         }
     }
 
@@ -123,6 +137,14 @@ class ChatApp {
         }
 
         try {
+            Swal.fire({
+                title: 'Loading messages...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             const response = await fetch(`${this.API_URL}/api/chat/sessions/${this.userId}/${sessionId}`, {
                 credentials: 'include',
                 headers: {
@@ -132,9 +154,14 @@ class ChatApp {
             const session = await response.json();
             this.cachedMessages[sessionId] = session.messages;
             this.renderMessages(session.messages);
-            console.log(session);
+            Swal.close();
         } catch (error) {
-            console.error('Failed to load session', error);
+            console.error('Error loading session:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Failed to load chat session. Please try again later.',
+            });
         }
     }
 
@@ -171,13 +198,29 @@ class ChatApp {
     }
 
     async deleteSession(sessionId) {
-        const confirmDelete = confirm('Are you sure you want to delete this chat session? This action cannot be undone.');
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        });
         
-        if (!confirmDelete) {
+        if (!result.isConfirmed) {
             return;
         }
 
         try {
+            Swal.fire({
+                title: 'Deleting session...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             const response = await fetch(`${this.API_URL}/api/chat/sessions/${this.userId}/${sessionId}`, {
                 method: 'DELETE',
                 credentials: 'include',
@@ -187,20 +230,25 @@ class ChatApp {
             });
 
             if (response.ok) {
-                console.log('Session deleted successfully.');
-                this.cachedSessions = this.cachedSessions.filter(session => session.sessionId !== sessionId);
-                this.renderSessions(this.cachedSessions);
-
-                if (this.currentSessionId === sessionId) {
-                    this.newSession();
-                }
+                delete this.cachedMessages[sessionId];
+                await this.fetchChatHistory(false);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deleted!',
+                    text: 'Your chat session has been deleted.',
+                    timer: 1500
+                });
             } else {
-                console.error('Failed to delete session.');
-                alert('Failed to delete the session. Please try again.');
+                throw new Error('Failed to delete session');
             }
         } catch (error) {
             console.error('Error deleting session:', error);
-            alert('An error occurred while deleting the session. Please try again.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Failed to delete chat session. Please try again later.',
+            });
         }
     }
 
@@ -209,14 +257,28 @@ class ChatApp {
         if (!messageText) return;
 
         try {
-            console.log('Sending message:', messageText);
-            console.log(this.currentSessionId);
+            this.elements.messageInput.value = '';
+            this.elements.messageInput.style.height = 'auto';
             
             const body = {
                 "userId": this.userId,
                 "userMessage": messageText,
                 ...(this.currentSessionId && { "sessionId": this.currentSessionId })
             };
+
+            let loadingMessage = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 1000,
+                timerProgressBar: true
+            });
+
+            loadingMessage.fire({
+                icon: 'info',
+                title: 'Sending message...'
+            });
+
             const response = await fetch(`${this.API_URL}/api/chat`, {
                 method: 'POST',
                 credentials: 'include',
@@ -225,7 +287,6 @@ class ChatApp {
                 },
                 body: JSON.stringify(body),
             });
-
             if (response.status === 401) {
                 // Token expired or invalid
                 this.logout();
@@ -251,7 +312,6 @@ class ChatApp {
             this.elements.messages.innerHTML += `<div class="ai-msg">${data.response}</div>`;
 
             this.fetchChatHistory(false);
-            this.elements.messageInput.value = '';
         } catch (error) {
             console.error('Failed to send message', error);
         }

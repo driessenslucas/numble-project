@@ -8,3 +8,6 @@ TODO:
         -[] Adjust 'ChatController.cs' to include history of the chat (from session if enabled)
         -[] Adjust frontend to add a toggle for history (use a checkbox)
         -[] Adjust app.js to include history of the chat (from session if enabled)
+
+
+    -[] FIx swal css
