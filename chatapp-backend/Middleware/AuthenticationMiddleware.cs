@@ -66,23 +66,7 @@ namespace ChatApp.Middleware
                     Console.WriteLine($"Claim: {claim.Type} - {claim.Value}");
                 }
 
-                /*
-                Claim: exp - 1733302461
-                Claim: nbf - 1733298861
-                Claim: ver - 1.0
-                Claim: iss - https://lucaschatapp.b2clogin.com/abb758de-a690-45be-b2c0-06a712c73151/v2.0/
-                Claim: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier - 1d00c458-02d5-4adf-a07a-b5901b523115
-                Claim: aud - 5d52d5ac-a767-4449-9270-deb5a0c3a961
-                Claim: nonce - defaultNonce
-                Claim: iat - 1733298861
-                Claim: auth_time - 1733298861
-                Claim: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname - lucas
-                Claim: name - unknown
-                Claim: emails - driessenslucas@gmail.com
-                Claim: tfp - B2C_1_chatflow
-                */
-
-                // Add claims to context for use in controllers
+                // Add userId to context
                 context.Items["UserId"] = principal.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
 
                 // set UserIds as a array in context.Items if it doesn't exist, else add to array
