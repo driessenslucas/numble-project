@@ -47,7 +47,13 @@ namespace ChatApp.Controllers
             try
             {
                 var authResult = ValidateUserAuthentication(request.UserId);
-                if (authResult != null) return authResult;
+                if (authResult != null) 
+                {
+                    return authResult;
+                }else
+                {
+                    return Unauthorized();
+                }
 
                 Console.WriteLine($"Processing chat request for user: {request.UserId}");
                 Console.WriteLine($"User message: {request.UserMessage}");
@@ -167,7 +173,13 @@ namespace ChatApp.Controllers
                 }
 
                 var authResult = ValidateUserAuthentication(userId);
-                if (authResult != null) return authResult;
+                if (authResult != null) 
+                {
+                    return authResult;
+                }else
+                {
+                    return Unauthorized();
+                }
 
                 var sessions = await _cosmosDbService.GetSessionsForUserAsync(userId);
                 return Ok(sessions);
@@ -190,7 +202,13 @@ namespace ChatApp.Controllers
                 }
 
                 var authResult = ValidateUserAuthentication(userId);
-                if (authResult != null) return authResult;
+                if (authResult != null) 
+                {
+                    return authResult;
+                }else
+                {
+                    return Unauthorized();
+                }
 
                 var session = await _cosmosDbService.GetSessionAsync(userId, sessionId);
                 if (session == null)
@@ -218,7 +236,13 @@ namespace ChatApp.Controllers
                 }
 
                 var authResult = ValidateUserAuthentication(userId);
-                if (authResult != null) return authResult;
+                if (authResult != null) 
+                {
+                    return authResult;
+                }else
+                {
+                    return Unauthorized();
+                }
 
                 Console.WriteLine($"Attempting to delete session {sessionId} for user {userId}");
                 await _cosmosDbService.DeleteSessionAsync(userId, sessionId);

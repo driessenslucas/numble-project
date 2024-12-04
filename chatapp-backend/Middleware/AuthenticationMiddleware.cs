@@ -83,7 +83,7 @@ namespace ChatApp.Middleware
                 */
 
                 // Add claims to context for use in controllers
-                // context.Items["UserId"] = principal.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+                context.Items["UserId"] = principal.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
 
                 // set UserIds as a array in context.Items if it doesn't exist, else add to array
                 if (context.Items["UserIds"] == null)
