@@ -17,7 +17,6 @@ namespace ChatApp.Services
         private readonly string _endpoint;
         private readonly string _apiKey;
 
-        // Constructor accepts ILogger to enable logging
         public OpenAIService(IConfiguration configuration)
         {
             try

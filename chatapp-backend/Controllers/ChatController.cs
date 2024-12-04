@@ -10,6 +10,7 @@ using Internal;
 
 namespace ChatApp.Controllers
 {
+    
     [Route("api/[controller]")]
     [ApiController]
     public class ChatController : ControllerBase
@@ -23,6 +24,16 @@ namespace ChatApp.Controllers
             _cosmosDbService = cosmosDbService ?? throw new ArgumentNullException(nameof(cosmosDbService));
         }
 
+        private IActionResult ValidateUserAuthentication(string requestUserId)
+        {
+            var authenticatedUserId = HttpContext.Items["UserId"]?.ToString();
+            if (string.IsNullOrEmpty(authenticatedUserId) || authenticatedUserId != requestUserId)
+            {
+                return Unauthorized("User ID mismatch or not authenticated");
+            }
+            return null;
+        }
+
         [HttpPost]
         public async Task<IActionResult> Chat([FromBody] ChatRequest request)
         {
@@ -33,10 +44,8 @@ namespace ChatApp.Controllers
 
             try
             {
-                if (string.IsNullOrEmpty(request.UserId))
-                {
-                    return BadRequest("User ID is required.");
-                }
+                var authResult = ValidateUserAuthentication(request.UserId);
+                if (authResult != null) return authResult;
 
                 Console.WriteLine($"Processing chat request for user: {request.UserId}");
                 Console.WriteLine($"User message: {request.UserMessage}");
@@ -139,6 +148,9 @@ namespace ChatApp.Controllers
                     return BadRequest("User ID is required.");
                 }
 
+                var authResult = ValidateUserAuthentication(userId);
+                if (authResult != null) return authResult;
+
                 var sessions = await _cosmosDbService.GetSessionsForUserAsync(userId);
                 return Ok(sessions);
             }
@@ -158,6 +170,9 @@ namespace ChatApp.Controllers
                 {
                     return BadRequest("User ID and Session ID are required.");
                 }
+
+                var authResult = ValidateUserAuthentication(userId);
+                if (authResult != null) return authResult;
 
                 var session = await _cosmosDbService.GetSessionAsync(userId, sessionId);
                 if (session == null)
@@ -179,6 +194,14 @@ namespace ChatApp.Controllers
         {
             try
             {
+                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(sessionId))
+                {
+                    return BadRequest("User ID and Session ID are required.");
+                }
+
+                var authResult = ValidateUserAuthentication(userId);
+                if (authResult != null) return authResult;
+
                 Console.WriteLine($"Attempting to delete session {sessionId} for user {userId}");
                 await _cosmosDbService.DeleteSessionAsync(userId, sessionId);
                 Console.WriteLine("Session deleted successfully.");

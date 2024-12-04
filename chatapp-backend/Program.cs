@@ -9,6 +9,7 @@ using Azure.Security.KeyVault.Secrets;
 using Azure.AI.OpenAI;
 using ChatApp.Services;
 using Microsoft.Azure.Cosmos;
+using ChatApp.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,16 +33,27 @@ builder.Services.AddSingleton<ICosmosDbService>(sp =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add CORS policy
+// Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()  // You can specify a specific domain instead of AllowAnyOrigin for security
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        policy
+            .WithOrigins("http://localhost:5500", "https://localhost:5500")
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
+
+// Configure Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = "https://LucasChatApp.b2clogin.com/LucasChatApp.onmicrosoft.com/v2.0/";
+        options.Audience = "5d52d5ac-a767-4449-9270-deb5a0c3a961"; 
+        options.RequireHttpsMetadata = true; 
+    });
 
 var app = builder.Build();
 
@@ -54,11 +66,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// app.UseCors(); // Use the configured CORS policy
-
-// Use CORS policy
+// Enable CORS before other middleware
 app.UseCors("AllowAll");
 
-app.MapControllers(); // Map controller routes
+// Authentication & Authorization
+app.UseMiddleware<AuthenticationMiddleware>();
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 
 app.Run();

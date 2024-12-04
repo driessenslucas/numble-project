@@ -1,197 +1,10 @@
-// class ChatApp {
-//     constructor() {
-//         this.userId = null;
-//         this.currentSessionId = null;
-//         this.cachedSessions = null; // Cache for sessions
-//         this.cachedMessages = {}; // Cache for messages per session
-//         this.elements = {
-//             messageInput: document.getElementById('message-input'),
-//             sendBtn: document.getElementById('send-btn'),
-//             messages: document.getElementById('messages'),
-//             sessionList: document.getElementById('session-list')
-//         };
-//         this.API_URL = 'https://localhost:5001';
-//         this.initEventListeners();
-//         this.authenticateUser();
-//         this.newSession();
-//     }
-
-//     authenticateUser() {
-//         // get userId from local storage
-//         this.userId = localStorage.getItem('userId');
-//         console.log('User ID:', this.userId);
-//         if (!this.userId) {
-//             // redirect to auth.html
-//             console.log('Redirecting to auth.html...');
-//             window.location.href = 'index.html';
-//         }
-
-//         // fetch chat history
-//         this.fetchChatHistory();
-//     }
-
-//     async fetchChatHistory(useCache = true) {
-//         if (useCache && this.cachedSessions) {
-//             console.log('Using cached sessions');
-//             this.renderSessions(this.cachedSessions);
-//             return;
-//         }
-
-//         try {
-//             const response = await fetch(`${this.API_URL}/api/chat/history?userId=${this.userId}`);
-//             const sessions = await response.json();
-//             console.log(sessions);
-//             this.cachedSessions = sessions; // Cache the sessions in sessionStorage
-//             sessionStorage.setItem('sessions', JSON.stringify(sessions));
-//             this.renderSessions(sessions);
-//         } catch (error) {
-//             console.error('Failed to fetch chat history', error);
-//         }
-//     }
-
-//     renderSessions(sessions) {
-//         this.elements.sessionList.innerHTML = sessions.map(session => 
-//             `<div class="session" data-session-id="${session.sessionId}">
-//                 ${session.sessionName}
-//             </div>`
-//         ).join('');
-
-//         document.querySelectorAll('.session').forEach(el => {
-//             el.addEventListener('click', (e) => {
-//                 const sessionId = e.target.dataset.sessionId;
-//                 this.loadSession(sessionId);
-//             });
-//         });
-//     }
-
-//     async loadSession(sessionId) {
-//         // Save sessionId to sessionStorage after loading a session
-//         sessionStorage.setItem('currentSessionId', sessionId);
-
-//         // Check if cached messages for this session are available
-//         if (this.cachedMessages[sessionId]) {
-//             console.log('Using cached messages for session:', sessionId);
-//             this.renderMessages(this.cachedMessages[sessionId]);
-//             this.currentSessionId = sessionId;
-//             return;
-//         }
-
-//         // Check sessionStorage for cached messages
-//         const cachedMessages = sessionStorage.getItem(`messages_${sessionId}`);
-//         if (cachedMessages) {
-//             console.log('Using cached messages from sessionStorage');
-//             this.cachedMessages[sessionId] = JSON.parse(cachedMessages);
-//             this.renderMessages(this.cachedMessages[sessionId]);
-//             this.currentSessionId = sessionId;
-//             return;
-//         }
-
-//         // Fetch messages from API if not in cache
-//         try {
-//             const response = await fetch(`${this.API_URL}/api/chat/sessions/${this.userId}/${sessionId}`);
-//             const session = await response.json();
-//             this.cachedMessages[sessionId] = session.messages; // Cache the messages
-//             sessionStorage.setItem(`messages_${sessionId}`, JSON.stringify(session.messages));
-//             this.renderMessages(session.messages);
-//             this.currentSessionId = sessionId;
-//             console.log(session);
-//         } catch (error) {
-//             console.error('Failed to load session', error);
-//         }
-//     }
-
-//     renderMessages(messages) {
-//         console.log(messages);
-//         // clear chat history
-//         this.elements.messages.innerHTML = '';
-//         messages.forEach(msg => {
-//             this.elements.messages.innerHTML += `<div class="${msg.isUserMessage ? 'user-msg' : 'ai-msg'}">
-//                 ${msg.text}
-//             </div>`;
-//         });
-//     }
-
-//     initEventListeners() {
-//         this.elements.sendBtn.addEventListener('click', () => this.sendMessage());
-//         this.elements.messageInput.addEventListener('keypress', (e) => {
-//             if (e.key === 'Enter') this.sendMessage();
-//         });
-        
-//         // Add event listener for new session button
-//         document.getElementById('new-message-btn').addEventListener('click', () => this.newSession());
-        
-//         // Add event listener for logout button
-//         document.getElementById('logout-btn').addEventListener('click', () => this.logout());
-//     }
-
-//     newSession() {
-//         // TODO: implement
-//         // clear chat history
-//         this.elements.messages.innerHTML = '';
-//         this.currentSessionId = null;
-        
-//         // clear input
-//         this.elements.messageInput.value = '';
-//         // Show default message
-//         this.elements.messages.innerHTML = '<div class="ai-msg">Hello, how can I help you today?</div>';
-        
-//     }
-
-//     async sendMessage() {
-//         const messageText = this.elements.messageInput.value.trim();
-//         if (!messageText) return;
-
-//         // Retrieve sessionId from sessionStorage
-//         const sessionId = sessionStorage.getItem('currentSessionId');
-//         console.log('Sending message:', messageText);
-
-//         try {
-//             const response = await fetch(`${this.API_URL}/api/chat`, {
-//                 method: 'POST',
-//                 headers: { 'Content-Type': 'application/json' },
-//                 body: JSON.stringify({
-//                     userId: this.userId,
-//                     userMessage: messageText,
-//                     sessionId: sessionId // Include sessionId in the request body
-//                 })
-//             });
-//             const data = await response.json();
-            
-//             console.log(data);
-//             // Show message
-//             this.elements.messages.innerHTML += `<div class="user-msg">${messageText}</div>`;
-//             this.elements.messages.innerHTML += `<div class="ai-msg">${data.response}</div>`;
-
-//             // Refresh chat history to show new session
-//             this.fetchChatHistory(false);
-            
-//             // load this session
-//             this.loadSession(sessionId);
-
-//             // Clear input
-//             this.elements.messageInput.value = '';
-//         } catch (error) {
-//             console.error('Failed to send message', error);
-//         }
-//     }
-
-//     logout() {
-//         localStorage.removeItem('userId');
-//         sessionStorage.clear();  // Clear cached sessions and messages on logout
-//         window.location.href = 'index.html';
-//     }
-// }
-
-// // Initialize app when DOM is ready
-// document.addEventListener('DOMContentLoaded', () => new ChatApp());
-
-
 class ChatApp {
     constructor() {
         this.userId = null;
         this.currentSessionId = null;
         this.cachedSessions = null;
         this.cachedMessages = {};
+        this.token = null;
         this.elements = {
             messageInput: document.getElementById('message-input'),
             sendBtn: document.getElementById('send-btn'),
@@ -203,16 +16,52 @@ class ChatApp {
         this.authenticateUser();
     }
 
+    
+    parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            console.error('Error parsing JWT:', e);
+            return null;
+        }
+    }
+
+    isTokenExpired(tokenData) {
+        if (!tokenData || !tokenData.exp) return true;
+        const expirationTime = tokenData.exp * 1000; // Convert to milliseconds
+        return Date.now() >= expirationTime;
+    }
+
     authenticateUser() {
         this.userId = localStorage.getItem('userId');
+        this.token = localStorage.getItem('idToken');
         console.log('User ID:', this.userId);
-        if (!this.userId) {
+        if (!this.userId || !this.token) {
             window.location.href = 'index.html';
             return;
         }
 
+        // Check token expiration
+        const tokenData = this.parseJwt(this.token);
+        if (this.isTokenExpired(tokenData)) {
+            this.logout();
+            return;
+        }
+
         this.fetchChatHistory();
-        this.newSession(); // Automatically start a new session
+        this.newSession();
+    }
+
+    getAuthHeaders() {
+        return {
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json'
+        };
     }
 
     async fetchChatHistory(useCache = true) {
@@ -223,7 +72,13 @@ class ChatApp {
         }
 
         try {
-            const response = await fetch(`${this.API_URL}/api/chat/history?userId=${this.userId}`);
+            const response = await fetch(`${this.API_URL}/api/chat/history?userId=${this.userId}`, {
+                credentials: 'include',
+                headers: {
+                    ...this.getAuthHeaders(),
+                }
+            });
+            
             const sessions = await response.json();
             this.cachedSessions = sessions;
             this.renderSessions(sessions);
@@ -262,14 +117,18 @@ class ChatApp {
         this.currentSessionId = sessionId;
         sessionStorage.setItem('currentSessionId', sessionId);
 
-        // Check cache first
         if (this.cachedMessages[sessionId]) {
             this.renderMessages(this.cachedMessages[sessionId]);
             return;
         }
 
         try {
-            const response = await fetch(`${this.API_URL}/api/chat/sessions/${this.userId}/${sessionId}`);
+            const response = await fetch(`${this.API_URL}/api/chat/sessions/${this.userId}/${sessionId}`, {
+                credentials: 'include',
+                headers: {
+                    ...this.getAuthHeaders(),
+                }
+            });
             const session = await response.json();
             this.cachedMessages[sessionId] = session.messages;
             this.renderMessages(session.messages);
@@ -299,16 +158,12 @@ class ChatApp {
     }
 
     async newSession() {
-        // Create a new session on the server
         try {
-            // delete sessionId from sessionStorage
             sessionStorage.removeItem('currentSessionId');
             this.currentSessionId = null;
-            // Clear UI
             this.elements.messages.innerHTML = '<div class="ai-msg">Hello, how can I help you today?</div>';
             this.elements.messageInput.value = '';
 
-            // Refresh sessions list
             this.fetchChatHistory(false);
         } catch (error) {
             console.error('Failed to create new session', error);
@@ -316,26 +171,26 @@ class ChatApp {
     }
 
     async deleteSession(sessionId) {
-        // Create a confirmation dialog
         const confirmDelete = confirm('Are you sure you want to delete this chat session? This action cannot be undone.');
         
         if (!confirmDelete) {
-            return; // Exit if user cancels
+            return;
         }
 
         try {
             const response = await fetch(`${this.API_URL}/api/chat/sessions/${this.userId}/${sessionId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    ...this.getAuthHeaders(),
+                }
             });
 
             if (response.ok) {
                 console.log('Session deleted successfully.');
-                // Remove session from cached sessions
                 this.cachedSessions = this.cachedSessions.filter(session => session.sessionId !== sessionId);
-                // Refresh the session list
                 this.renderSessions(this.cachedSessions);
 
-                // If the deleted session was the current session, clear the chat area
                 if (this.currentSessionId === sessionId) {
                     this.newSession();
                 }
@@ -354,7 +209,6 @@ class ChatApp {
         if (!messageText) return;
 
         try {
-            // if this.sessionId is null, don't include it in the request
             console.log('Sending message:', messageText);
             console.log(this.currentSessionId);
             
@@ -365,18 +219,25 @@ class ChatApp {
             };
             const response = await fetch(`${this.API_URL}/api/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: {
+                    ...this.getAuthHeaders(),
+                },
                 body: JSON.stringify(body),
             });
-            const data = await response.json();
 
+            if (response.status === 401) {
+                // Token expired or invalid
+                this.logout();
+                return;
+            }
+
+            const data = await response.json();
             console.log(data);
 
             this.currentSessionId = data.sessionId;
-            // Save sessionId to sessionStorage
             sessionStorage.setItem('currentSessionId', data.sessionId);
             
-            // Update cached messages for the current session
             if (!this.cachedMessages[this.currentSessionId]) {
                 this.cachedMessages[this.currentSessionId] = [];
             }
@@ -386,14 +247,10 @@ class ChatApp {
                 { text: data.response, isUserMessage: false }
             );
 
-            // Render messages
             this.elements.messages.innerHTML += `<div class="user-msg">${messageText}</div>`;
             this.elements.messages.innerHTML += `<div class="ai-msg">${data.response}</div>`;
 
-            // Refresh chat history
             this.fetchChatHistory(false);
-
-            // Clear input
             this.elements.messageInput.value = '';
         } catch (error) {
             console.error('Failed to send message', error);
@@ -404,15 +261,14 @@ class ChatApp {
         const confirmLogout = confirm('Are you sure you want to log out? All unsaved chat sessions will be cleared.');
         
         if (!confirmLogout) {
-            return; // Exit if user cancels
+            return;
         }
 
         try {
-            // Clear user-related data
             localStorage.removeItem('userId');
-            sessionStorage.clear();  // Clear cached sessions and messages on logout
+            localStorage.removeItem('idToken');
+            sessionStorage.clear();
             
-            // Redirect to login page
             window.location.href = 'index.html';
         } catch (error) {
             console.error('Logout error:', error);
@@ -421,5 +277,4 @@ class ChatApp {
     }
 }
 
-// Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => new ChatApp());
