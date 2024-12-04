@@ -40,147 +40,81 @@ namespace ChatApp.Controllers
         public async Task<IActionResult> Chat([FromBody] ChatRequest request)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
-            try
+            try 
             {
-                var authResult = ValidateUserAuthentication(request.UserId);
-                if (authResult != null) 
-                {
-                    return authResult;
-                }else
-                {
+                if (ValidateUserAuthentication(request.UserId) != null)
                     return Unauthorized();
-                }
 
-                Console.WriteLine($"Processing chat request for user: {request.UserId}");
-                Console.WriteLine($"User message: {request.UserMessage}");
+                var response = string.IsNullOrEmpty(request.SessionId)
+                    ? await _openAIService.GetChatResponseAsync(request.UserMessage)
+                    : await _openAIService.GetChatWithHistoryResponseAsync(
+                        request.UserMessage, 
+                        await _cosmosDbService.GetSessionAsync(request.UserId, request.SessionId)
+                    );
 
-                var response = "";
-                // check if request contains a session ID
-                if (string.IsNullOrEmpty(request.SessionId))
-                {
-                    Console.WriteLine("No session ID provided.");
-                    response = await _openAIService.GetChatResponseAsync(request.UserMessage);
-                }
-                else{
-                    response = request.IncludeHistory
-                        ? await _openAIService.GetChatWithHistoryResponseAsync(request.UserMessage, await _cosmosDbService.GetSessionAsync(request.UserId, request.SessionId))
-                        : await _openAIService.GetChatResponseAsync(request.UserMessage);
-                }
-                    
-                Console.WriteLine($"OpenAI Response: {response}");
-
-                ChatSession chatSession;
-
-                if (!string.IsNullOrEmpty(request.SessionId))
-                {
-                    // Retrieve existing session
-                    chatSession = await _cosmosDbService.GetSessionAsync(request.UserId, request.SessionId);
-                    if (chatSession == null)
-                    {
-                        return NotFound("Session not found.");
-                    }
-
-                    // Append new message to existing session
-                    chatSession.Messages.Add(new ChatMessage
-                    {
-                        MessageId = Guid.NewGuid().ToString(),
-                        Text = request.UserMessage,
-                        IsUserMessage = true,
-                        Timestamp = DateTime.UtcNow.ToString("o"),
-                        IncludeHistory = request.IncludeHistory
-                    });
-
-                    chatSession.Messages.Add(new ChatMessage
-                    {
-                        MessageId = Guid.NewGuid().ToString(),
-                        Text = response,
-                        IsUserMessage = false,
-                        Timestamp = DateTime.UtcNow.ToString("o"),
-                        IncludeHistory = request.IncludeHistory
-                    });
-                }
-                else
-                {
-                    // Create new session
-                    chatSession = new ChatSession
-                    {
-                        sessionId = Guid.NewGuid().ToString(),
-                        UserId = request.UserId,
-                        SessionName = "Default Session",
-                        Messages = new List<ChatMessage>
-                        {
-                            new ChatMessage
-                            {
-                                MessageId = Guid.NewGuid().ToString(),
-                                Text = request.UserMessage,
-                                IsUserMessage = true,
-                                Timestamp = DateTime.UtcNow.ToString("o"),
-                                IncludeHistory = request.IncludeHistory
-                            },
-                            new ChatMessage
-                            {
-                                MessageId = Guid.NewGuid().ToString(),
-                                Text = response,
-                                IsUserMessage = false,
-                                Timestamp = DateTime.UtcNow.ToString("o"),
-                                IncludeHistory = request.IncludeHistory
-                            }
-                        },
-                        LastUpdated = DateTime.UtcNow.ToString("o")
-                    };
-                }
-
-                Console.WriteLine("Created/Updated ChatSession object:");
-                Console.WriteLine($"  SessionId: {chatSession.sessionId}");
-                Console.WriteLine($"  UserId: {chatSession.UserId}");
-                Console.WriteLine($"  Messages Count: {chatSession.Messages.Count}");
-                Console.WriteLine($"  LastUpdated: {chatSession.LastUpdated}");
-
-                try
-                {
-                    await _cosmosDbService.SaveSessionAsync(chatSession);
-                    Console.WriteLine("Successfully saved session to Cosmos DB");
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine($"Failed to save to Cosmos DB: {ex.GetType().Name} - {ex.Message}");
-                    Console.Error.WriteLine($"Stack trace: {ex.StackTrace}");
-                    throw;
-                }
+                var chatSession = await CreateOrUpdateChatSession(request, response);
+                await _cosmosDbService.SaveSessionAsync(chatSession);
 
                 return Ok(new { response, sessionId = chatSession.sessionId });
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error in Chat endpoint: {ex.GetType().Name} - {ex.Message}");
-                Console.Error.WriteLine($"Stack trace: {ex.StackTrace}");
+                Console.Error.WriteLine($"Error in Chat endpoint: {ex.Message}");
                 return StatusCode(500, "An internal server error occurred.");
             }
+        }
+
+        private async Task<ChatSession> CreateOrUpdateChatSession(ChatRequest request, string response)
+        {
+            if (!string.IsNullOrEmpty(request.SessionId))
+            {
+                var session = await _cosmosDbService.GetSessionAsync(request.UserId, request.SessionId);
+                if (session == null)
+                    throw new Exception("Session not found.");
+
+                session.Messages.Add(CreateChatMessage(request.UserMessage, true));
+                session.Messages.Add(CreateChatMessage(response, false));
+                return session;
+            }
+
+            return new ChatSession
+            {
+                sessionId = Guid.NewGuid().ToString(),
+                UserId = request.UserId,
+                SessionName = "Default Session",
+                Messages = new List<ChatMessage>
+                {
+                    CreateChatMessage(request.UserMessage, true),
+                    CreateChatMessage(response, false)
+                },
+                LastUpdated = DateTime.UtcNow.ToString("o")
+            };
+        }
+
+        private ChatMessage CreateChatMessage(string text, bool isUserMessage)
+        {
+            return new ChatMessage
+            {
+                MessageId = Guid.NewGuid().ToString(),
+                Text = text,
+                IsUserMessage = isUserMessage,
+                Timestamp = DateTime.UtcNow.ToString("o")
+            };
         }
 
         [HttpGet("history")]
         public async Task<IActionResult> GetChatHistory([FromQuery] string userId)
         {
-            try
+            if (string.IsNullOrEmpty(userId))
+                return BadRequest("User ID is required.");
+
+            if (ValidateUserAuthentication(userId) != null)
+                return Unauthorized();
+
+            try 
             {
-                if (string.IsNullOrEmpty(userId))
-                {
-                    return BadRequest("User ID is required.");
-                }
-
-                var authResult = ValidateUserAuthentication(userId);
-                if (authResult != null) 
-                {
-                    return authResult;
-                }else
-                {
-                    return Unauthorized();
-                }
-
                 var sessions = await _cosmosDbService.GetSessionsForUserAsync(userId);
                 return Ok(sessions);
             }
@@ -194,29 +128,18 @@ namespace ChatApp.Controllers
         [HttpGet("sessions/{userId}/{sessionId}")]
         public async Task<IActionResult> GetSession(string userId, string sessionId)
         {
-            try
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(sessionId))
+                return BadRequest("User ID and Session ID are required.");
+
+            if (ValidateUserAuthentication(userId) != null)
+                return Unauthorized();
+
+            try 
             {
-                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(sessionId))
-                {
-                    return BadRequest("User ID and Session ID are required.");
-                }
-
-                var authResult = ValidateUserAuthentication(userId);
-                if (authResult != null) 
-                {
-                    return authResult;
-                }else
-                {
-                    return Unauthorized();
-                }
-
                 var session = await _cosmosDbService.GetSessionAsync(userId, sessionId);
-                if (session == null)
-                {
-                    return NotFound("Session not found.");
-                }
-
-                return Ok(session);
+                return session == null 
+                    ? NotFound("Session not found.")
+                    : Ok(session);
             }
             catch (Exception ex)
             {
@@ -228,33 +151,25 @@ namespace ChatApp.Controllers
         [HttpDelete("sessions/{userId}/{sessionId}")]
         public async Task<IActionResult> DeleteSession(string userId, string sessionId)
         {
-            try
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(sessionId))
+                return BadRequest("User ID and Session ID are required.");
+
+            if (ValidateUserAuthentication(userId) != null)
+                return Unauthorized();
+
+            try 
             {
-                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(sessionId))
-                {
-                    return BadRequest("User ID and Session ID are required.");
-                }
-
-                var authResult = ValidateUserAuthentication(userId);
-                if (authResult != null) 
-                {
-                    return authResult;
-                }else
-                {
-                    return Unauthorized();
-                }
-
-                Console.WriteLine($"Attempting to delete session {sessionId} for user {userId}");
                 await _cosmosDbService.DeleteSessionAsync(userId, sessionId);
-                Console.WriteLine("Session deleted successfully.");
                 return Ok("Session deleted successfully.");
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error deleting session: {ex.GetType().Name} - {ex.Message}");
-                Console.Error.WriteLine($"Stack trace: {ex.StackTrace}");
+                Console.Error.WriteLine($"Error deleting session: {ex.Message}");
                 return StatusCode(500, "An error occurred while deleting the session.");
             }
         }
+
+
     }
 }
+     
