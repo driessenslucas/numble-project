@@ -15,7 +15,7 @@ class ChatApp {
         this.initializeEventListeners();
         this.initializeProfile();
         this.authenticateUser();
-        this.fetchChatHistory();
+        
         this.historyToggle = document.getElementById('history-toggle');
     }
 
@@ -44,17 +44,48 @@ class ChatApp {
         this.token = localStorage.getItem('idToken');
         console.log('User ID:', this.userId);
         if (!this.userId || !this.token) {
-            window.location.href = 'index.html';
+            console.error('User ID or token not found');
+            swal.fire({
+                icon: 'error',
+                title: 'Session expired',
+                text: 'Please log in again to continue.',
+                // okButtonText: 'Log in',
+                showOkButton: true,
+                okButtonText: 'Log out',
+                showCancelButton: true,
+                cancelButtonText: 'close',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.logout();
+                }
+            }
+            );
             return;
         }
 
         // Check token expiration
         const tokenData = this.parseJwt(this.token);
         if (this.isTokenExpired(tokenData)) {
-            this.logout();
+            swal.fire({
+                icon: 'error',
+                title: 'Session expired',
+                text: 'Please log in again to continue.',
+                // okButtonText: 'Log in',
+                showOkButton: true,
+                okButtonText: 'Log out',
+                showCancelButton: true,
+                cancelButtonText: 'close',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.logout();
+                }
+            }
+            );
+            
             return;
         }
 
+        this.fetchChatHistory(true);
         this.newSession();
     }
 
@@ -65,18 +96,10 @@ class ChatApp {
         };
     }
 
-    async fetchChatHistory(useCache = true) {
-        //check if cache is valid
-        try{
-            for (const session of this.cachedSessions) {
-                if (!this.cachedMessages[session.sessionId]) {
-                    useCache = false;
-                    break;
-                }
-            }
-        } catch (error) {
-            console.error('Error checking cache:', error);
-            useCache = false;
+    async fetchChatHistory(useCache = false) {
+        // if chat history contains a status message, remove it
+        if (this.cachedsessions && this.cachedSessions.length === 1 && this.cachedSessions[0].status) {
+            this.cachedSessions = null;
         }
 
         if (useCache && this.cachedSessions) {
@@ -84,6 +107,7 @@ class ChatApp {
             this.renderSessions(this.cachedSessions);
             return;
         }
+
 
         try {
 
@@ -94,11 +118,23 @@ class ChatApp {
                 }
             });
             
+            if (response.status === 401) {
+                // Token expired or invalid
+                sessionStorage.removeItem('currentSessionId');
+                swal.fire({
+                    icon: 'error',
+                    title: 'Session expired',
+                    text: 'Please log in again to continue.',
+                });
+            }
+            else if (response.status !== 200) {
+                throw new Error('Failed to fetch chat history');
+            }
             const sessions = await response.json();
+
             localStorage.setItem('cachedSessions', JSON.stringify(sessions));
             this.cachedSessions = sessions;
             this.renderSessions(sessions);
-            Swal.close();
         } catch (error) {
             console.error('Error fetching chat history:', error);
             Swal.fire({
@@ -110,29 +146,38 @@ class ChatApp {
     }
 
     renderSessions(sessions) {
-        this.elements.sessionList.innerHTML = sessions.map(session => 
-            `<div class="session" data-session-id="${session.sessionId}">
-                ${session.sessionName || 'Unnamed Session'}
-                <span class="delete-session-btn" data-session-id="${session.sessionId}">
-                    🗑️
-                </span>
-            </div>`
-        ).join('');
+        console.log('Rendering sessions:', sessions);
+        if (!sessions || sessions.length === 0 || (sessions.length === 1 && sessions[0].status)) {
+            this.elements.sessionList.innerHTML = '<div class="session">No sessions found</div>';
+            return;
+        }
+        try {
+            this.elements.sessionList.innerHTML = sessions.map(session =>
+                `<div class="session" data-session-id="${session.sessionId}">
+                    ${session.sessionName || 'Unnamed Session'}
+                    <span class="delete-session-btn" data-session-id="${session.sessionId}">
+                        🗑️
+                    </span>
+                </div>`
+            ).join('');
 
-        document.querySelectorAll('.session').forEach(el => {
-            el.addEventListener('click', (e) => {
-                const sessionId = e.target.dataset.sessionId || e.target.closest('.session').dataset.sessionId;
-                this.loadSession(sessionId);
+            document.querySelectorAll('.session').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    const sessionId = e.target.dataset.sessionId || e.target.closest('.session').dataset.sessionId;
+                    this.loadSession(sessionId);
+                });
             });
-        });
 
-        document.querySelectorAll('.delete-session-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent triggering the session click
-                const sessionId = e.target.dataset.sessionId || e.target.closest('.delete-session-btn').dataset.sessionId;
-                this.deleteSession(sessionId);
+            document.querySelectorAll('.delete-session-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent triggering the session click
+                    const sessionId = e.target.dataset.sessionId || e.target.closest('.delete-session-btn').dataset.sessionId;
+                    this.deleteSession(sessionId);
+                });
             });
-        });
+        } catch (error) {
+            console.error('Error rendering sessions:', error);
+        }
     }
 
     async loadSession(sessionId) {
@@ -152,9 +197,22 @@ class ChatApp {
                     ...this.getAuthHeaders(),
                 }
             });
+            if (response.status === 401) {
+                // Token expired or invalid
+                sessionStorage.removeItem('currentSessionId');
+                swal.fire({
+                    icon: 'error',
+                    title: 'Session expired',
+                    text: 'Please log in again to continue.',
+                });
+            }
+            else if (response.status !== 200) {
+                throw new Error('Failed to load session');
+            }
             const session = await response.json();
             this.cachedMessages[sessionId] = session.messages;
             this.renderMessages(session.messages);
+            
         } catch (error) {
             console.error('Error loading session:', error);
             this.showToast('Failed to load chat session', 'error');
@@ -324,12 +382,20 @@ class ChatApp {
                 },
                 body: JSON.stringify(body),
             });
+            
             if (response.status === 401) {
                 // Token expired or invalid
-                this.logout();
-                return;
+                sessionStorage.removeItem('currentSessionId');
+                swal.fire({
+                    icon: 'error',
+                    title: 'Session expired',
+                    text: 'Please log in again to continue.',
+                });
             }
+            else if (response.status !== 200) {
 
+                throw new Error('Failed to send message');
+            } 
             const data = await response.json();
             console.log(data);
 
@@ -356,22 +422,32 @@ class ChatApp {
     }
 
     logout() {
-        const confirmLogout = confirm('Are you sure you want to log out? All unsaved chat sessions will be cleared.');
+       
         
-        if (!confirmLogout) {
-            return;
-        }
+        swal.fire({
+            title: 'Are you sure?',
+            text: 'You will be logged out.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Log out',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                 try {
+                localStorage.removeItem('userId');
+                localStorage.removeItem('idToken');
+                sessionStorage.clear();
+                
+                window.location.href = 'index.html';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Failed to log out. Please try again.');
+                }
+            }
+        });
 
-        try {
-            localStorage.removeItem('userId');
-            localStorage.removeItem('idToken');
-            sessionStorage.clear();
-            
-            window.location.href = 'index.html';
-        } catch (error) {
-            console.error('Logout error:', error);
-            alert('An error occurred while logging out. Please try again.');
-        }
     }
 
     showLoading() {

@@ -2,6 +2,7 @@ using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Threading;
 using System.Threading.Tasks;
+using Internal;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Protocols;
@@ -61,26 +62,28 @@ namespace ChatApp.Middleware
                 var principal = handler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
 
                 // Show items in principal
-                foreach (var claim in principal.Claims)
-                {
-                    Console.WriteLine($"Claim: {claim.Type} - {claim.Value}");
-                }
-
+                // foreach (var claim in principal.Claims)
+                // {
+                //     Console.WriteLine($"Claim: {claim.Type} - {claim.Value}");
+                // }
                 // Add userId to context
-                context.Items["UserId"] = principal.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+                var userId = principal.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
 
-                // set UserIds as a array in context.Items if it doesn't exist, else add to array
-                if (context.Items["UserIds"] == null)
+                if (userId != null)
                 {
-                    context.Items["UserIds"] = new string[] { context.Items["UserId"]?.ToString() };
-                }
-                else
-                {
-                    var userIds = (string[])context.Items["UserIds"];
-                    userIds = userIds.Append(context.Items["UserId"]?.ToString()).ToArray();
-                    context.Items["UserIds"] = userIds;
-                }
+                    // Check if UserIds exists in context.Items and initialize if necessary
+                    if (context.Items["UserIds"] is not List<string> userIds)
+                    {
+                        userIds = new List<string>();
+                        context.Items["UserIds"] = userIds;
+                    }
 
+                    // Add userId to the list if it's not already present
+                    if (!userIds.Contains(userId))
+                    {
+                        userIds.Add(userId);
+                    }
+                };
                 await _next(context);
             }
             catch (Exception ex)

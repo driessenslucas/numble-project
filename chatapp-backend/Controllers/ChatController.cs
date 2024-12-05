@@ -26,15 +26,18 @@ namespace ChatApp.Controllers
 
         private IActionResult ValidateUserAuthentication(string requestUserId)
         {
-            Console.WriteLine($"HttpContext items: {string.Join(", ", HttpContext.Items.Keys)}");
-            var authenticatedUsers = HttpContext.Items["userIds"] as List<string>;
+            // Retrieve the list of authenticated users
+            var authenticatedUsers = HttpContext.Items["UserIds"] as List<string>;
+
+            // Validate the requested user ID
             if (authenticatedUsers != null && authenticatedUsers.Contains(requestUserId))
             {
+                Console.WriteLine($"User {requestUserId} is authenticated.");
                 return Ok();
             }
-            return null;
-        }
 
+            return Unauthorized();
+        }
 
         [HttpPost]
         public async Task<IActionResult> Chat([FromBody] ChatRequest request)
@@ -44,8 +47,7 @@ namespace ChatApp.Controllers
 
             try 
             {
-                if (ValidateUserAuthentication(request.UserId) != null)
-                    return Unauthorized();
+                ValidateUserAuthentication(request.UserId);
 
                 var response = string.IsNullOrEmpty(request.SessionId)
                     ? await _openAIService.GetChatResponseAsync(request.UserMessage)
@@ -110,8 +112,7 @@ namespace ChatApp.Controllers
             if (string.IsNullOrEmpty(userId))
                 return BadRequest("User ID is required.");
 
-            if (ValidateUserAuthentication(userId) != null)
-                return Unauthorized();
+            ValidateUserAuthentication(userId);
 
             try 
             {
@@ -131,8 +132,7 @@ namespace ChatApp.Controllers
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(sessionId))
                 return BadRequest("User ID and Session ID are required.");
 
-            if (ValidateUserAuthentication(userId) != null)
-                return Unauthorized();
+            ValidateUserAuthentication(userId);
 
             try 
             {
@@ -154,8 +154,7 @@ namespace ChatApp.Controllers
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(sessionId))
                 return BadRequest("User ID and Session ID are required.");
 
-            if (ValidateUserAuthentication(userId) != null)
-                return Unauthorized();
+            ValidateUserAuthentication(userId);
 
             try 
             {
