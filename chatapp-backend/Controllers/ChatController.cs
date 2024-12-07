@@ -39,6 +39,7 @@ namespace ChatApp.Controllers
             return Unauthorized();
         }
 
+        
         [HttpPost]
         public async Task<IActionResult> Chat([FromBody] ChatRequest request)
         {
@@ -47,7 +48,7 @@ namespace ChatApp.Controllers
 
             try 
             {
-                ValidateUserAuthentication(request.UserId);
+                // ValidateUserAuthentication(request.UserId);
 
                 var response = string.IsNullOrEmpty(request.SessionId)
                     ? await _openAIService.GetChatResponseAsync(request.UserMessage)
@@ -112,7 +113,7 @@ namespace ChatApp.Controllers
             if (string.IsNullOrEmpty(userId))
                 return BadRequest("User ID is required.");
 
-            ValidateUserAuthentication(userId);
+            // ValidateUserAuthentication(userId);
 
             try 
             {
@@ -132,7 +133,7 @@ namespace ChatApp.Controllers
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(sessionId))
                 return BadRequest("User ID and Session ID are required.");
 
-            ValidateUserAuthentication(userId);
+            // ValidateUserAuthentication(userId);
 
             try 
             {
@@ -154,7 +155,7 @@ namespace ChatApp.Controllers
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(sessionId))
                 return BadRequest("User ID and Session ID are required.");
 
-            ValidateUserAuthentication(userId);
+            // ValidateUserAuthentication(userId);
 
             try 
             {

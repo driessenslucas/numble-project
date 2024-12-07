@@ -12,53 +12,57 @@ namespace ChatApp.Services;
 public class CosmosDbService : ICosmosDbService
 {
     private readonly Container _container;
-
+    private readonly string _keyVaultUri;
+    private readonly string _secretName;
+    private readonly string _connectionString;
+    private readonly string _databaseName;
+    private readonly string _containerName;
     public CosmosDbService(IConfiguration configuration)
     {
         try
         {
-            var keyVaultUri = configuration["Azure:KeyVaultUri"] ?? throw new ArgumentNullException("KeyVaultUri is not configured.");
-            var secretName = configuration["Azure:CosmosDbConnectionString"] ?? throw new ArgumentNullException("CosmosDbConnectionString is not configured.");
+            _keyVaultUri = configuration["Azure:KeyVaultUri"] ?? throw new ArgumentNullException("KeyVaultUri is not configured.");
+            _secretName = configuration["Azure:CosmosDbConnectionString"] ?? throw new ArgumentNullException("CosmosDbConnectionString is not configured.");
             
-            Console.WriteLine($"KeyVaultUri: {keyVaultUri}");
-            Console.WriteLine($"SecretName: {secretName}");
+            // Console.WriteLine($"KeyVaultUri: {_keyVaultUri}");
+            // Console.WriteLine($"SecretName: {_secretName}");
 
             var credential = new AzureCliCredential();
-            var secretClient = new SecretClient(new Uri(keyVaultUri), credential);
+            var secretClient = new SecretClient(new Uri(_keyVaultUri), credential);
 
             // Async retrieval of the secret
             Console.WriteLine("Retrieving secret...");
-            var secretResponse = secretClient.GetSecretAsync(secretName).Result;
-            var connectionString = secretResponse.Value.Value;
+            var secretResponse = secretClient.GetSecretAsync(_secretName).Result;
+            _connectionString = secretResponse.Value.Value;
 
-            if (string.IsNullOrEmpty(connectionString))
+            if (string.IsNullOrEmpty(_connectionString))
             {
                 throw new Exception("Failed to retrieve Cosmos DB connection string from Key Vault");
             }
 
             Console.WriteLine("Connection string retrieved successfully.");
-            Console.WriteLine($"Connection string: {connectionString}");
+            // Console.WriteLine($"Connection string: {_connectionString}");
 
             // Initialize CosmosClient with the retrieved connection string
-            var cosmosClient = new CosmosClient(connectionString);
+            var cosmosClient = new CosmosClient(_connectionString);
             
             // Get database and container names from configuration
-            var databaseName = configuration["CosmosDb:DatabaseName"] ?? throw new ArgumentNullException("DatabaseName is not configured.");
-            var containerName = configuration["CosmosDb:ContainerName"] ?? throw new ArgumentNullException("ContainerName is not configured.");
+            _databaseName = configuration["CosmosDb:DatabaseName"] ?? throw new ArgumentNullException("DatabaseName is not configured.");
+            _containerName = configuration["CosmosDb:ContainerName"] ?? throw new ArgumentNullException("ContainerName is not configured.");
 
-            Console.WriteLine($"DatabaseName: {databaseName}");
-            Console.WriteLine($"ContainerName: {containerName}");
+            Console.WriteLine($"DatabaseName: {_databaseName}");
+            Console.WriteLine($"ContainerName: {_containerName}");
 
             try
             {
                 // Create database if it doesn't exist
                 Console.WriteLine("Creating database if it doesn't exist...");
-                var databaseResponse = cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName).Result;
+                var databaseResponse = cosmosClient.CreateDatabaseIfNotExistsAsync(_databaseName).Result;
                 var database = databaseResponse.Database;
 
                 // Create container if it doesn't exist with partition key
                 Console.WriteLine($"Creating container if it doesn't exist with partition key path: /userId");
-                var containerProperties = new ContainerProperties(containerName, partitionKeyPath: "/userId");
+                var containerProperties = new ContainerProperties(_containerName, partitionKeyPath: "/userId");
                 var containerResponse = database.CreateContainerIfNotExistsAsync(containerProperties).Result;
                 Console.WriteLine($"Container created successfully.");
                 Console.WriteLine($"Container ID: {containerResponse.Container.Id}");

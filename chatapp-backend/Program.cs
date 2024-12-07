@@ -20,7 +20,11 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 // Add OpenAI service
-builder.Services.AddScoped<IOpenAIService, OpenAIService>();
+builder.Services.AddSingleton<IOpenAIService>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    return new OpenAIService(configuration);
+});
 
 // Register CosmosDB service
 builder.Services.AddSingleton<ICosmosDbService>(sp =>
@@ -51,8 +55,8 @@ var configuration = builder.Configuration;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = configuration["AzureB2C:Authority"];
-        options.Audience = configuration["AzureB2C:ClientId"];
+        options.Authority = configuration["AzureB2C:Authority"] ?? throw new ArgumentNullException("Authority is not configured.");
+        options.Audience = configuration["AzureB2C:ClientId"] ?? throw new ArgumentNullException("ClientId is not configured.");
         options.RequireHttpsMetadata = true; 
     });
 

@@ -17,13 +17,15 @@ namespace ChatApp.Middleware
         private readonly string _tenantName;
         private readonly string _policyName;
         private readonly string _clientId;
+        
 
         public AuthenticationMiddleware(RequestDelegate next, IConfiguration configuration)
         {
             _next = next;
-            _tenantName = configuration["AzureB2C:TenantName"];
-            _policyName = configuration["AzureB2C:PolicyName"];
-            _clientId = configuration["AzureB2C:ClientId"];
+            _tenantName = configuration["AzureB2C:TenantName"] ?? throw new ArgumentNullException("TenantName is not configured.");
+            _policyName = configuration["AzureB2C:PolicyName"] ?? throw new ArgumentNullException("Policyname is not configured.");
+            _clientId = configuration["AzureB2C:ClientId"] ?? throw new ArgumentNullException("ClientId is not configured.");
+        
         }
 
         public async Task InvokeAsync(HttpContext context)

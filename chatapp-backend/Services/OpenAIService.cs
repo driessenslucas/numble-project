@@ -20,6 +20,7 @@ namespace ChatApp.Services
         private readonly string _endpoint;
         private readonly string _apiKey;
 
+
         public OpenAIService(IConfiguration configuration)
         {
             try
@@ -126,10 +127,8 @@ namespace ChatApp.Services
             }
         }
 
-
-
-
         // Asynchronous method to get API key from Azure KeyVault
+        // TODO: Implement same for cosmosdbservice or make this a helper class;
         private async Task<string> GetAzureKeyFromVault(string keyVaultUri, string secretName)
         {
             try
